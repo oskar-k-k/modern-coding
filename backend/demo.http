@@ -1,0 +1,38 @@
+### Public aggregate response
+GET http://localhost:8085/api/profiles/alex/page
+
+### Next cursor page
+GET http://localhost:8085/api/profiles/alex/contents?cursor=3
+
+### Owner view
+GET http://localhost:8085/api/profiles/alex/page
+Authorization: Basic alex demo-password
+
+### Saved contents (private to Alex)
+GET http://localhost:8085/api/profiles/alex/contents?saved=true
+Authorization: Basic alex demo-password
+
+### Read image through ObjectStorage
+GET http://localhost:8085/api/auth/avatar/1
+
+### Fetch CSRF token before writes. Keep the session cookie in the HTTP client.
+GET http://localhost:8085/api/demo/csrf
+Authorization: Basic alex demo-password
+
+> {% client.global.set("csrf", response.body.token); %}
+
+### Follow Jordan
+POST http://localhost:8085/api/profiles/jordan/follow
+Authorization: Basic alex demo-password
+X-CSRF-TOKEN: {{csrf}}
+Content-Type: application/json
+
+{"following": true}
+
+### Undo follow
+POST http://localhost:8085/api/profiles/jordan/follow
+Authorization: Basic alex demo-password
+X-CSRF-TOKEN: {{csrf}}
+Content-Type: application/json
+
+{"following": false}

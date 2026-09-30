@@ -1,0 +1,36 @@
+name: modern-coding
+services:
+  app:
+    build: ./backend
+    environment:
+      SERVER_ADDRESS: 0.0.0.0
+      DEMO_STORAGE_ROOT: /app/data/objects
+    volumes:
+      - demo-objects:/app/data/objects
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8085/api/profiles/alex/page"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 30s
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        BACKEND_URL: http://app:8085
+    ports:
+      - "127.0.0.1:${MODERN_CODING_PORT:-8085}:3000"
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+volumes:
+  demo-objects:
