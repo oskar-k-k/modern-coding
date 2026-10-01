@@ -9,3 +9,11 @@ node_modules/
 *.tsbuildinfo
 .env.*
 !.env.example
+.local/
+# Local project evidence must be reviewed and sanitized before publication.
+/frontend/app/project-code-evidence.ts
+/frontend/app/project-code-flows.ts
+/frontend/app/project-code-snapshots.json
+/scripts/check-project-evidence.cjs
+/scripts/project-code-selections.mjs
+/scripts/project-code-snapshots.mjs

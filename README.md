@@ -242,6 +242,23 @@ npm run build
 
 ## Auf einem anderen Rechner präsentieren
 
+### Quellen der Projektbeispiele
+
+Die oeffentliche Demoanalyse liegt in `frontend/app/public-project-analyses.json`.
+IST-Ausschnitte enthalten relative Quellpfade, inklusive Zeilenbereiche,
+Aufnahmedatum und SHA-256. Mehrteilige Beispiele werden mit Dateinamen und eigener
+Erklaerung dargestellt; SOLL-Dateien sind Vorschlaege, keine Bestandsquellen.
+Der JSON-Export erhaelt diese Reihenfolge unter `examples.current.parts` und
+`examples.recommended.parts`. Die bisherigen `code`-Felder bleiben erhalten.
+Prozentwerte sind subjektive Diskussionsgewichte. Bewertungen werden lokal im
+Browser gespeichert und koennen als JSON exportiert und wieder importiert werden.
+
+Private Arbeitsprojekt-Analysen und deren Quellcode gehoeren nicht in dieses
+Repository. Vor jeder Veroeffentlichung den gesamten vorgemerkten Inhalt pruefen,
+auch wenn private Quelldateien bereits durch `.gitignore` ausgeschlossen sind.
+
+### Start
+
 ```sh
 git clone https://github.com/oskar-k-k/modern-coding.git
 cd modern-coding
