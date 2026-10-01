@@ -244,18 +244,46 @@ npm run build
 
 ### Quellen der Projektbeispiele
 
-Die oeffentliche Demoanalyse liegt in `frontend/app/public-project-analyses.json`.
-IST-Ausschnitte enthalten relative Quellpfade, inklusive Zeilenbereiche,
-Aufnahmedatum und SHA-256. Mehrteilige Beispiele werden mit Dateinamen und eigener
-Erklaerung dargestellt; SOLL-Dateien sind Vorschlaege, keine Bestandsquellen.
-Der JSON-Export erhaelt diese Reihenfolge unter `examples.current.parts` und
-`examples.recommended.parts`. Die bisherigen `code`-Felder bleiben erhalten.
-Prozentwerte sind subjektive Diskussionsgewichte. Bewertungen werden lokal im
-Browser gespeichert und koennen als JSON exportiert und wieder importiert werden.
+Die allgemeine Frontend-Matrix liegt getrennt in
+`frontend/app/global-frontend-data.ts`: Next.js, React, TypeScript/JavaScript,
+HTML/Barrierefreiheit, CSS, Daten/Formulare, Tests/Performance und Architektur/AI.
+Sie wird nur unter Global/Allgemein eingebunden; Projektbewertungen bleiben
+unveraendert. Die Beispiele sind Illustrationen, keine Repository-Fundstellen.
+Technische Referenzen und Pruefdatum werden mit exportiert. Die Prozentwerte
+sind redaktionelle Diskussionsgewichte, keine Messungen oder pauschalen Verbote.
+Pruefung der Matrix: `node scripts/check-global-frontend.cjs`.
 
-Private Arbeitsprojekt-Analysen und deren Quellcode gehoeren nicht in dieses
-Repository. Vor jeder Veroeffentlichung den gesamten vorgemerkten Inhalt pruefen,
-auch wenn private Quelldateien bereits durch `.gitignore` ausgeschlossen sind.
+IST-Beispiele in Projektanalysen stammen aus geprüften Quellcode-Ausschnitten.
+Unter dem Code stehen der relative Repository-Pfad, der inklusive Zeilenbereich
+und das Aufnahmedatum. Der JSON-Export enthält zusätzlich den SHA-256 des
+Ausschnitts (UTF-8, LF-Zeilenenden, ohne zusätzlichen abschließenden Zeilenumbruch).
+SOLL-Code ist als Entwurf gekennzeichnet. Bei neuen Zieltechniken kann der
+IST-Ausschnitt den zu ersetzenden Bestand zeigen. Ohne passende Fundstelle
+erscheint kein erfundenes IST-Beispiel.
+
+Zusammengehörige Stellen erscheinen als geordnete Abschnitte mit Dateinamen und
+eigener Erklärung, etwa Controller, Service und Antwortmodell. Jeder IST-Abschnitt
+hat einen eigenen Quellenbeleg. Dateinamen im SOLL sind Vorschläge für den Neubau;
+Methodenausschnitte sind keine vollständigen, ausführbaren Implementierungen.
+Die Zuordnung steht in `frontend/app/project-code-flows.ts`. Der JSON-Export
+übernimmt diese Abschnitte unter `examples.current.parts` beziehungsweise
+`examples.recommended.parts` einschließlich Beschreibung, Code und IST-Quellen.
+Die bisherigen `code`-Felder bleiben für bestehende Export-Leser erhalten.
+
+Die Momentaufnahmen liegen in `frontend/app/project-code-snapshots.json`;
+`scripts/project-code-selections.mjs` enthält die geprüfte Auswahl.
+Die Präsentation benötigt keinen Zugriff auf das analysierte Repository.
+Zum Prüfen gegen einen separat vorhandenen Checkout, aus dem Projektverzeichnis:
+
+```powershell
+node scripts/project-code-snapshots.mjs revidacon "<Pfad zum RevidaCon-Checkout>" --check
+node scripts/project-code-snapshots.mjs modern-coding . --check
+node scripts/check-project-evidence.cjs
+```
+
+Nach erneuter Prüfung der Zeilenauswahl aktualisiert derselbe Aufruf ohne
+`--check` die Momentaufnahmen. Private Konfigurationen und Zugangsdaten gehören
+nicht in die Auswahl.
 
 ### Start
 

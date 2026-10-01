@@ -1,4 +1,5 @@
-import publicProjectAnalyses from "./public-project-analyses.json";
+import { withProjectEvidence } from "./project-code-evidence";
+import { globalFrontendTopics } from "./global-frontend-data";
 
 export type CodeSource = {
   project: string;
@@ -8,14 +9,12 @@ export type CodeSource = {
   sha256: string;
   capturedAt: string;
 };
-
 export type CodeExamplePart = {
   file: string;
   description: string;
   code: string;
   source?: CodeSource;
 };
-
 export type Rating = {
   name: string;
   scores: [number, number, number];
@@ -32,22 +31,21 @@ export type Rating = {
   recommendedExample?: string;
   currentDescription?: string;
   recommendedDescription?: string;
+  references?: { title: string; url: string }[];
+  reviewedAt?: string;
 };
-
 export type Topic = {
   id: string;
   label: string;
   subtitle: string;
   rows: Rating[];
 };
-
 export type FrameworkArea = {
   id: string;
   label: string;
   subtitle: string;
   topics: Topic[];
 };
-
 export type ProjectAnalysis = {
   id: string;
   label: string;
@@ -55,7 +53,6 @@ export type ProjectAnalysis = {
   description: string;
   frameworks: FrameworkArea[];
 };
-
 const currentExamples: Record<string, string> = {
   "JPA-Entities & Hibernate":
     "@Entity\nclass ContentEntity {\n    @Id Long id;\n    @ManyToOne UserEntity author;\n    @OneToMany List<CommentEntity> comments;\n}",
@@ -187,7 +184,6 @@ const currentExamples: Record<string, string> = {
   "Frontend-eigene Domänenlogik":
     "if (profile.visibility === 'PRIVATE') hideContent();",
 };
-
 const recommendedExamples: Record<string, string> = {
   "JPA-Entities & Hibernate":
     "record ContentCard(long id, String title, String visibility) {}\n\nreturn jdbc.query(sql, cardMapper, viewerId, cursor);",
@@ -319,7 +315,6 @@ const recommendedExamples: Record<string, string> = {
   "Frontend-eigene Domänenlogik":
     "const canExpand = row.currentExample || row.recommendedExample;\nreturn <ExpandableRow disabled={!canExpand} />;",
 };
-
 const explanations: Record<string, string> = {
   "JPA-Entities & Hibernate":
     "JPA und Hibernate bilden Datenbanktabellen als Java-Objekte ab. Das ist hilfreich, wenn ein fachliches Objektmodell im Mittelpunkt steht, kann bei leselastigen API-Antworten aber zusätzliche Navigations- und Mapping-Schichten erzeugen.",
@@ -452,7 +447,6 @@ const explanations: Record<string, string> = {
   "Frontend-eigene Domänenlogik":
     "Frontend-Domänenlogik sind fachliche Entscheidungen im Browser. Anzeigezustände gehören dort hin; Berechtigungen und Datenintegrität sollten serverseitig bleiben.",
 };
-
 const codeDescription = (
   name: string,
   kind: "current" | "recommended",
@@ -466,7 +460,6 @@ const codeDescription = (
   }
   return `Dieses Beispiel zeigt die empfohlene Anpassung für ${name}. Die Variante soll den betroffenen Ablauf klarer machen und die fachliche oder technische Grenze dort halten, wo sie wirklich gebraucht wird.`;
 };
-
 const row = (
   name: string,
   scores: Rating["scores"],
@@ -485,7 +478,6 @@ const row = (
   currentDescription: codeDescription(name, "current", dominant(scores)),
   recommendedDescription: codeDescription(name, "recommended", dominant(scores)),
 });
-
 const springTopics: Topic[] = [
   {
     id: "spring",
@@ -827,7 +819,6 @@ const springTopics: Topic[] = [
     ],
   },
 ];
-
 const nextTopics: Topic[] = [
   {
     id: "next-runtime",
@@ -879,9 +870,904 @@ const nextTopics: Topic[] = [
     ],
   },
 ];
+const projectRow = (
+  name: string,
+  scores: Rating["scores"],
+  explanation: string,
+  reason: string,
+  priority: Rating["priority"],
+  priorityReason: string,
+  occurrence: Rating["occurrence"],
+  currentExample: string,
+  recommendedExample: string,
+  currentDescription: string,
+  recommendedDescription: string,
+): Rating => ({
+  name,
+  scores,
+  explanation,
+  reason,
+  priority,
+  priorityReason,
+  occurrence,
+  currentExample,
+  recommendedExample,
+  currentDescription,
+  recommendedDescription,
+});
+const revidaconScores: Record<string, Rating["scores"]> = {
+  "JPA-Entities & Hibernate": [65, 30, 5],
+  "Repository pro Entity": [45, 45, 10],
+  "Request- & Response-Typen": [0, 15, 85],
+  "Separate Mapper-Klassen": [35, 50, 15],
+  "Service-Schicht": [5, 55, 40],
+  "Interface für jeden Service": [85, 10, 5],
+  "BaseController / BaseService": [95, 5, 0],
+  "Technische Paketstruktur": [75, 20, 5],
+  "REST-Controller": [0, 10, 90],
+  "Dependency Injection": [0, 5, 95],
+  "JDBC & parameterisiertes SQL": [0, 35, 65],
+  Transaktionen: [0, 20, 80],
+  "Flyway & Schema-Constraints": [0, 20, 80],
+  Authentifizierung: [0, 20, 80],
+  "Autorisierung & Rollen": [0, 55, 45],
+  "Sessions & CSRF": [0, 25, 75],
+  Validierung: [0, 25, 75],
+  "Eigene Business-AOP": [75, 20, 5],
+  "Logs, Metriken & Actuator": [0, 20, 80],
+  Integrationstests: [0, 15, 85],
+  "Mock-lastige Schichtentests": [55, 35, 10],
+  WebFlux: [95, 5, 0],
+  "Statische Typisierung": [0, 5, 95],
+  Records: [0, 10, 90],
+  Enums: [0, 25, 75],
+  Klassen: [0, 45, 55],
+  Interfaces: [20, 65, 15],
+  Vererbung: [90, 10, 0],
+  Komposition: [0, 10, 90],
+  "Unveränderliche Daten": [0, 20, 80],
+  "Globaler veränderlicher Zustand": [90, 10, 0],
+  Generics: [10, 45, 45],
+  var: [20, 45, 35],
+  Optional: [15, 60, 25],
+  Exceptions: [5, 45, 50],
+  "try-with-resources": [0, 5, 95],
+  Streams: [15, 55, 30],
+  Schleifen: [0, 10, 90],
+  "Virtual Threads": [20, 55, 25],
+  "parallelStream()": [90, 10, 0],
+  "Eigene Reflection": [85, 15, 0],
+  "Vertical Slices": [0, 10, 90],
+  "Starre Schichtenarchitektur": [90, 10, 0],
+  Objektorientierung: [10, 70, 20],
+  "Prozedurale Abläufe": [5, 20, 75],
+  "Reine Funktionen": [0, 20, 80],
+  "Domain-driven Design": [5, 55, 40],
+  CQRS: [5, 45, 50],
+  "Event Sourcing": [85, 10, 5],
+  DRY: [20, 70, 10],
+  "Single Responsibility": [0, 55, 45],
+  Strategy: [30, 50, 20],
+  "Jeden Schritt auslagern": [80, 15, 5],
+  "God Classes": [90, 10, 0],
+  "Lokales SQL-Mapping": [0, 20, 80],
+  "Kurze Filter & Transformationen": [5, 25, 70],
+  "Große Business-Lambdas": [65, 30, 5],
+  "Verschachtelte Lambdas": [80, 15, 5],
+  "Gespeicherte Callbacks": [55, 40, 5],
+  "Explizite lokale Captures": [5, 25, 70],
+  "Server Components": [5, 35, 60],
+  "Client Components": [0, 35, 65],
+  "Route Handler als BFF": [10, 55, 35],
+  "Server Actions": [70, 25, 5],
+  "Rewrites zum Backend": [0, 25, 75],
+  "Frontend-eigene Domänenlogik": [75, 20, 5],
+};
+const revidaconExamples: Record<
+  string,
+  Pick<Rating, "currentExample" | "recommendedExample">
+> = {
+  "JPA-Entities & Hibernate": {
+    currentExample:
+      "class ContractAccession {\n    static belongsTo = [contractUuid: ContractUuid]\n    static hasMany = [statusChanges: ContractAccessionStatusChange]\n\n    static mapping = { table \"contract_accession\" }\n    static constraints = { status nullable: false }\n}",
+    recommendedExample:
+      "record AccessionTableRow(long id, String ik, String contractName, String status) {}\n\nreturn jdbc.query(sql, rowMapper, filter.status(), user.accessiblePartners());",
+  },
+  "Request- & Response-Typen": {
+    currentExample:
+      "Map result = [success: true, actionTitle: actionTitle, data: marshallResult.data]\nrender result as JSON",
+    recommendedExample:
+      "record AccessionActionResponse(\n    boolean success,\n    String actionTitle,\n    List<AccessionActionRow> rows\n) {}",
+  },
+  "BaseController / BaseService": {
+    currentExample:
+      "class ContractAccessionController extends AbstractExtendedBaseDomainController<ContractAccession> {\n    def ajaxDTList() { ... }\n    def ajaxDoAction() { ... }\n}",
+    recommendedExample:
+      "class ContractAccessionController {\n    ContractAccessionController(AccessionPage page, AccessionActions actions) { ... }\n}",
+  },
+  "Technische Paketstruktur": {
+    currentExample:
+      "grails-app/controllers/de/cse/aoe/rv/contractAccession\n grails-app/services/de/cse/aoe/rv/contracts\n grails-app/domain/de/cse/aoe/rv/contractAccession",
+    recommendedExample:
+      "features/accessions/page\nfeatures/accessions/actions\nfeatures/contracts/imports\nfeatures/files/download",
+  },
+  "JDBC & parameterisiertes SQL": {
+    currentExample:
+      "ContractAccession.createCriteria().list(params) {\n    contractUuid { inList(\"status\", params.status) }\n}",
+    recommendedExample:
+      "SELECT ca.id, ca.ik, cu.status\nFROM contract_accession ca\nJOIN contract_uuid cu ON cu.id = ca.contract_uuid_id\nWHERE cu.status = ANY(:statuses)\n  AND ca.partner_id = ANY(:visiblePartnerIds)",
+  },
+  "Autorisierung & Rollen": {
+    currentExample:
+      "if (Authority.has(Authority.ROLE_ADMIN)) return true\nSet<Long> userIds = listAccessibleUserIdsForCurrentUser(params.permissionParams)",
+    recommendedExample:
+      "authorization.assertCanReadAccession(user, accessionId);\n\nWHERE ca.partner_id = ANY(:accessiblePartnerIds)",
+  },
+  Vererbung: {
+    currentExample:
+      "class ContractService extends AbstractExtendedBaseDomainService<Contract> {\n    protected void additionalFiltering(hcb, params) { ... }\n}",
+    recommendedExample:
+      "class ContractService {\n    ContractService(ContractQueries queries, ContractAuthorization authorization) { ... }\n}",
+  },
+  Records: {
+    currentExample:
+      "Map row = [id: accession.id, ik: accession.ik, status: accession.status?.name()]",
+    recommendedExample:
+      "record AccessionRow(long id, String ik, ContractStatus status, boolean editable) {}",
+  },
+  Enums: {
+    currentExample:
+      "if (params.status == \"PARTICIPATION\") {\n    // magic string from UI/select2\n}",
+    recommendedExample:
+      "enum ContractAccessionStatus { PARTICIPATION, CANCELED, OPTED_OUT }\n\nrecord AccessionFilter(Set<ContractAccessionStatus> statuses) {}",
+  },
+  "Globaler veränderlicher Zustand": {
+    currentExample:
+      "def ctx = Holders.grailsApplication.mainContext\nreturn ctx.getBean(ContractFileService)",
+    recommendedExample:
+      "class ContractFileUseCase {\n    ContractFileUseCase(ContractFileService files, CurrentUserProvider users) { ... }\n}",
+  },
+  "Vertical Slices": {
+    currentExample:
+      "Controller -> BaseController -> Service -> Domain -> Marshaller -> GSP/Backbone",
+    recommendedExample:
+      "features/accessions/action\n  AccessionActionController\n  AccessionActionService\n  AccessionActionRepository\n  AccessionActionResponse",
+  },
+  CQRS: {
+    currentExample:
+      "ContractAccession wird fuer Tabellen, Modals, Aktionen, Validierung und Statusberechnung genutzt.",
+    recommendedExample:
+      "record AccessionPageRow(...)\nrecord ChangeAccessionStatusCommand(...)\n\nclass AccessionQueries {}\nclass AccessionCommands {}",
+  },
+  "Frontend-eigene Domänenlogik": {
+    currentExample:
+      "if (model.get('canBeActivated')) {\n  view.showActionButton();\n}",
+    recommendedExample:
+      "type AccessionAction = { label: string; allowed: boolean; reason?: string };\n// Backend entscheidet allowed, Frontend rendert nur.",
+  },
+};
+const revidaconPriority = (name: string): Rating["priority"] => {
+  if (
+    [
+      "JPA-Entities & Hibernate",
+      "BaseController / BaseService",
+      "Technische Paketstruktur",
+      "REST-Controller",
+      "Autorisierung & Rollen",
+      "Statische Typisierung",
+      "Vererbung",
+      "Vertical Slices",
+      "Starre Schichtenarchitektur",
+      "Frontend-eigene Domänenlogik",
+    ].includes(name)
+  ) {
+    return "Sehr hoch";
+  }
+  if (["WebFlux", "parallelStream()", "Event Sourcing", "Server Actions"].includes(name)) {
+    return "Mittel";
+  }
+  return "Hoch";
+};
+// Reviewed against application sources and build declarations. Missing technology
+// alone is not an exclusion: useful rewrite proposals remain in the analysis.
+const revidaconExcludedRows: Record<string, string> = {
+  WebFlux: "Keine reaktiven HTTP-Pfade oder Reactor-Abhaengigkeiten nachgewiesen; kein konkreter Rewrite-Bedarf.",
+  "parallelStream()": "Keine Aufrufe nachgewiesen; die vorhandenen Jobs brauchen explizite Job-Steuerung.",
+  "Event Sourcing": "Keine Event-Store-/Replay-Architektur nachgewiesen; Statushistorien allein sind kein Event Sourcing.",
+  "Server Actions": "Kein Next.js-Bestand; fuer das geplante separate REST-Backend kein konkreter Zusatznutzen begruendet.",
+  "Interface für jeden Service": "Kein entsprechendes Service-Interface-Muster im Anwendungscode nachgewiesen.",
+  "Repository pro Entity": "Keine entsprechenden Repository-Klassen nachgewiesen; GORM-Datenzugriff wird separat bewertet.",
+  "Eigene Business-AOP": "Keine eigenen Business-Aspekte nachgewiesen; Framework-Transaktionen bleiben ein eigenes Thema.",
+  "Jeden Schritt auslagern": "Keine konkrete Fundstelle fuer diese pauschale Stilkritik; belegte Basisklassen und Service-Locator werden separat bewertet.",
+};
 
+const relevantRevidaconTopics = (topics: Topic[]): Topic[] =>
+  withProjectEvidence("revidacon", topics
+    .map((topic) => ({
+      ...topic,
+      rows: topic.rows.filter((rating) => !Object.hasOwn(revidaconExcludedRows, rating.name)),
+    }))
+    .filter((topic) => topic.rows.length > 0));
+
+const revidaconOccurrence = (name: string): Rating["occurrence"] => {
+  if (name === "Eigene Reflection") return "Niedrig";
+  if (
+    [
+      "JPA-Entities & Hibernate",
+      "Service-Schicht",
+      "BaseController / BaseService",
+      "Technische Paketstruktur",
+      "Dependency Injection",
+      "Transaktionen",
+      "Klassen",
+      "Vererbung",
+      "Starre Schichtenarchitektur",
+      "DRY",
+      "Client Components",
+      "Frontend-eigene Domänenlogik",
+    ].includes(name)
+  ) {
+    return "Sehr hoch";
+  }
+  if (["WebFlux", "Virtual Threads", "Server Actions", "Event Sourcing"].includes(name)) {
+    return "Niedrig";
+  }
+  return "Hoch";
+};
+const revidaconReason = (base: Rating): string =>
+  `RevidaCon-spezifisch neu bewertet: ${base.name} wird hier nicht abstrakt betrachtet, sondern als Entscheidung fuer den kompletten Rewrite des Grails/Groovy/Backbone-Monolithen. Die Prozentwerte spiegeln ein, ob das Muster im neuen Spring/Java-Zielsystem uebernommen, neu definiert oder bewusst verworfen werden sollte.`;
+const revidaconExplanation = (base: Rating): string =>
+  `${base.explanation} Im RevidaCon-Kontext ist wichtig, dass der alte Code nicht mechanisch migriert wird: viele heutige Stellen sind durch Grails-Konventionen, GORM-Domains, Basisklassen, dynamische Maps, Backbone/GSP und historisch gewachsene Services gepraegt.`;
+const revidaconProjectRow = (base: Rating): Rating => {
+  const scores = revidaconScores[base.name] ?? base.scores;
+  const examples = revidaconExamples[base.name] ?? {};
+  return {
+    ...base,
+    scores,
+    reason: revidaconReason(base),
+    explanation: revidaconExplanation(base),
+    priority: revidaconPriority(base.name),
+    priorityReason:
+      "Prioritaet fuer den Rewrite: Diese Entscheidung beeinflusst, ob AI und Reviewer einen Use Case lokal verstehen, testen und sicher veraendern koennen.",
+    occurrence: revidaconOccurrence(base.name),
+    currentExample: examples.currentExample ?? base.currentExample,
+    recommendedExample: examples.recommendedExample ?? base.recommendedExample,
+    currentDescription:
+      "IST in RevidaCon: Dieses Beispiel steht fuer ein Muster aus dem bestehenden Grails/Groovy/Backbone-System oder fuer dessen typische Auswirkung im Projekt.",
+    recommendedDescription:
+      "SOLL fuer RevidaCon: Dieses Beispiel zeigt, wie der Punkt im Neubau expliziter, testbarer und AI-freundlicher modelliert werden sollte.",
+  };
+};
+const revidaconFromGlobalTopic = (
+  topic: Topic,
+  label = topic.label,
+  subtitle = topic.subtitle,
+): Topic => ({
+  id: `revidacon-${topic.id}`,
+  label,
+  subtitle: `${subtitle} Projektbezogen fuer RevidaCon neu bewertet.`,
+  rows: topic.rows.map(revidaconProjectRow),
+});
+const revidaconBackendTopics: Topic[] = [
+  {
+    id: "rewrite",
+    label: "Rewrite-Strategie",
+    subtitle: "Vom Grails-Monolithen zu klaren Rewrite-Slices.",
+    rows: [
+      projectRow(
+        "Feature-Slices statt Grails-Schichten",
+        [5, 80, 15],
+        "RevidaCon ist aktuell stark nach Grails-Konventionen, Base-Controllern, Domain-Klassen und Backbone-Schichten organisiert. Für einen kompletten Neubau sollte die fachliche Funktion der primäre Schnitt sein.",
+        "Nicht jede bestehende Controller/Service/Domain-Datei sollte 1:1 übersetzt werden. Die neue Architektur sollte pro Ablauf sichtbar machen: HTTP/API, Berechtigung, Validierung, Datenzugriff, Antwortvertrag und Nebenwirkungen.",
+        "Sehr hoch",
+        "Das ist die wichtigste Weiche für AI-Development. Wenn wir die alten Schichten nachbauen, übernehmen wir die heutigen Navigationsprobleme in neuer Syntax.",
+        "Sehr hoch",
+        "class ContractAccessionController extends AbstractExtendedBaseDomainController<ContractAccession> {\n    def ajaxDTList() { ... }\n    def ajaxDoAction() { ... }\n}",
+        "@RestController\n@RequestMapping(\"/api/contracts/accessions\")\nclass ContractAccessionApi {\n    ContractAccessionPage page(Filter filter, CurrentUser user) {\n        return useCase.page(filter, user.id());\n    }\n}",
+        "Aktuell hängt ein großer fachlicher Ablauf an generischen Grails-Basisklassen und vielen Ajax-Endpunkten. Für Reviewer und KI ist schwer sichtbar, welche Regeln zu welchem konkreten Use Case gehören.",
+        "Im Rewrite sollte ein Use Case als zusammenhängender Slice modelliert werden. Nicht die alte Datei-Struktur ist die Vorlage, sondern der fachliche Ablauf.",
+      ),
+      projectRow(
+        "Legacy-Code nicht mechanisch migrieren",
+        [85, 10, 5],
+        "Ein mechanischer Rewrite würde Grails/GORM/Backbone-Strukturen nur in ein neues Framework kopieren. Das würde die technische Schuld konservieren.",
+        "Die Analyse soll entscheiden, welche Konzepte fachlich bleiben, nicht welche Klassen weiterleben. Besonders alte Controller-Aktionen, generische Table-Config-Pfade und Domain-Callbacks sollten kritisch geprüft werden.",
+        "Sehr hoch",
+        "Der Nutzer hat explizit einen vollständigen Neubau genannt. Damit ist die wichtigste Entscheidung: nicht portieren, sondern fachlich neu schneiden.",
+        "Sehr hoch",
+        "ContractAccession.beforeUpdate()\nContractService.additionalFiltering(...)\nContractAccessionController.ajaxSaveContractAccessionDataFromModal()",
+        "record ContractAccessionDecision(...)\n\n@Transactional\nvoid changeStatus(ChangeAccessionStatus command) {\n    rules.assertAllowed(command);\n    accessions.changeStatus(command);\n}",
+        "Aktuell liegen Lebenszykluslogik, Filterlogik und UI-Aktionen über verschiedene Legacy-Orte verteilt.",
+        "Der neue Code sollte Kommandos, Regeln und persistente Änderungen explizit machen. Das hilft AI, gezielte Änderungen vorzunehmen.",
+      ),
+      projectRow(
+        "Domänenmodule priorisieren",
+        [0, 65, 35],
+        "RevidaCon enthält viele Domänen: Verträge, Beitritte, Partner, Himi, VTV, PQ, Dateien, Nachrichten, Jobs, Importe und Nutzerrechte. Ein Big-Bang-Rewrite ohne Modulpriorisierung wäre riskant.",
+        "Die neue Analyse sollte zuerst Kernmodule mit hohem fachlichem Risiko priorisieren: ContractUuid/ContractAccession, Produkt-/Preisimporte, Berechtigungen und File/Export.",
+        "Sehr hoch",
+        "Bei 274 Domain-Klassen und 567 Services ist eine Reihenfolge nötig. AI kann besser helfen, wenn ein Modul klare Grenzen und Akzeptanztests bekommt.",
+        "Sehr hoch",
+        "grails-app/domain/de/cse/aoe/rv/contractAccession\n grails-app/services/de/cse/aoe/rv/contracts\n grails-app/assets/javascripts/backbone/specialContractUuid",
+        "modules/contracts\nmodules/accessions\nmodules/imports\nmodules/files\nmodules/identity\n\n// jeweils eigene API, Tests und Datenmigration",
+        "Die aktuelle Struktur zeigt fachliche Bereiche, aber sie sind technisch und historisch verwoben.",
+        "Für den Neubau sollten Module zuerst als Zielkarte definiert werden. Danach kann AI je Modul Slices implementieren.",
+      ),
+    ],
+  },
+  {
+    id: "spring-target",
+    label: "Spring Boot",
+    subtitle: "Zielbackend für den RevidaCon-Neubau bewerten.",
+    rows: [
+      projectRow(
+        "Spring Boot statt Grails als Zielplattform",
+        [5, 20, 75],
+        "RevidaCon läuft aktuell auf Grails 6. Grails bringt viel Konvention, dynamische Laufzeitmagie und GORM-Integration mit. Für einen vollständigen Neubau ist Spring Boot als expliziteres Backend-Fundament besser geeignet.",
+        "Ich würde Spring Boot als Zielplattform nutzen, aber nicht als klassische Schichtenmaschine. Wichtig ist Spring Boot für HTTP, DI, Security, Transactions, Observability und Konfiguration; die fachlichen Module sollten projektbezogen geschnitten werden.",
+        "Sehr hoch",
+        "Diese Entscheidung setzt den Rahmen für fast alle weiteren Architekturentscheidungen. Sie beeinflusst AI-Kontext, Tests, Build, Deployment, API-Verträge und Datenzugriff.",
+        "Sehr hoch",
+        "plugins {\n    id \"org.grails.grails-web\" version \"6.2.3\"\n    id \"org.grails.grails-gsp\" version \"6.2.3\"\n}\n\nimplementation \"org.grails:grails-web-boot\"",
+        "@SpringBootApplication\nclass RevidaConApplication {}\n\n@RestController\n@RequestMapping(\"/api/contracts\")\nclass ContractController {\n    private final ContractPageService pages;\n}",
+        "Aktuell ist Grails die Plattform und bestimmt Controller, Views, GORM, Assets und Konventionen.",
+        "Im Neubau sollte Spring Boot nur die technische Laufzeit liefern. Die Architektur entsteht aus fachlichen Modulen und expliziten Verträgen.",
+      ),
+      projectRow(
+        "Spring MVC REST Controller",
+        [0, 15, 85],
+        "REST Controller sind im Zielsystem der klare Einstiegspunkt für Frontend und Integrationen. RevidaCon hat bereits einige REST-v2-Ansätze, aber der Hauptteil läuft noch über Grails-Controller, GSP und Ajax-Fragmente.",
+        "Für den Rewrite sollten neue Funktionen primär über REST/OpenAPI laufen. Servergerenderte Fragmente und Backbone-Endpunkte sollten nicht fortgeführt werden.",
+        "Sehr hoch",
+        "Ein konsistenter API-Vertrag ist Voraussetzung für modernes Frontend, AI-generierte Clients, Tests und spätere Modultrennung.",
+        "Hoch",
+        "def ajaxListTableContent() {\n    render(template: \"/contractAccession/templates/listTableContent\", model: [...])\n}",
+        "@GetMapping\nContractAccessionPage list(@Valid ContractAccessionFilter filter, CurrentUser user) {\n    return pageService.list(filter, user.id());\n}",
+        "Der IST-Code liefert oft UI-Templates oder Backbone-spezifische JSON-Strukturen.",
+        "Der SOLL-Code liefert fachliche Datenverträge. Rendering und Interaktion gehören ins neue Frontend.",
+      ),
+      projectRow(
+        "Spring Security mit objektbezogenen Policies",
+        [0, 45, 55],
+        "RevidaCon hat komplexe Rechte über Rollen, Partner, Distributor, ConcernGroup, IKs und fachliche Zustände. Ein einfacher Rollencheck reicht nicht.",
+        "Spring Security sollte für Authentifizierung und technische Security genutzt werden. Objektbezogene Rechte sollten als Policies/Query-Filter je Use Case sichtbar sein.",
+        "Sehr hoch",
+        "Berechtigungen sind in RevidaCon fachlich zentral. Fehler wären kritisch und schwer nachträglich zu korrigieren.",
+        "Sehr hoch",
+        "if( Authority.has(Authority.ROLE_ADMIN) ) return true\nSet<Long> userIds = listAccessibleUserIdsForCurrentUser(params.permissionParams)",
+        "authorization.assertCanReadContract(user, contractId);\n\nWHERE contract.partner_id = ANY(:accessiblePartnerIds)",
+        "Aktuell sind Berechtigungen über Authority, Services, Criteria und Basisklassen verteilt.",
+        "Im Neubau sollte jede API explizit zeigen, welche fachliche Zugriffspolitik gilt.",
+      ),
+      projectRow(
+        "Spring Transactions bewusst setzen",
+        [0, 20, 80],
+        "Im aktuellen Projekt tragen sehr viele Services `@Transactional`. Das ist grundsätzlich wichtig, aber oft großflächig und wenig aussagekräftig.",
+        "Im Neubau sollten Transaktionen pro fachlichem Schreib-Use-Case gesetzt werden. Lese-Queries sollten read-only sein und keine versteckten Domain-Callbacks auslösen.",
+        "Hoch",
+        "Transaktionsgrenzen entscheiden über Konsistenz, Nebenläufigkeit und Testbarkeit.",
+        "Sehr hoch",
+        "@Transactional\nclass ContractService extends AbstractExtendedBaseDomainService<Contract> {\n    Contract delete(Contract domainObject) { ... }\n}",
+        "@Transactional\nvoid cancelAccession(CancelAccessionCommand command) { ... }\n\n@Transactional(readOnly = true)\nContractAccessionPage page(Filter filter) { ... }",
+        "Die Klasse als Ganzes ist transaktional, obwohl einzelne Methoden sehr unterschiedliche Semantik haben.",
+        "Transaktionen sollten die fachliche Operation ausdrücken. Das ist für Review und AI deutlich präziser.",
+      ),
+      projectRow(
+        "Actuator, Logs und Metriken",
+        [0, 20, 80],
+        "RevidaCon hat Jobs, Imports, externe Systeme und große Tabellen. Ohne Beobachtbarkeit wird ein Rewrite schwer betreibbar.",
+        "Spring Boot Actuator, strukturierte Logs und fachliche Metriken sollten früh Teil der Zielarchitektur sein, besonders für Import-Pipelines, Jobs und externe APIs.",
+        "Hoch",
+        "Beim Rewrite müssen alte und neue Prozesse verglichen werden. Beobachtbarkeit hilft, Unterschiede und Produktionsprobleme schnell zu finden.",
+        "Mittel",
+        "log.error('accession with id ' + obj.id + ' failed validation')\nnew Exception().printStackTrace()",
+        "log.warn(\"accession_validation_failed accessionId={} rule={} value={}\", id, rule, value);\nregistry.counter(\"imports.validation.failed\", Tags.of(\"type\", type)).increment();",
+        "Der IST-Code nutzt teils ad-hoc Logging und Stacktraces für Validierungsfälle.",
+        "Der SOLL-Code sollte strukturierte Events und Metriken erzeugen, die Betrieb und Migration unterstützen.",
+      ),
+    ],
+  },
+  {
+    id: "java-groovy",
+    label: "Java & Groovy",
+    subtitle: "Dynamik reduzieren, Typen und Verträge für AI nutzbar machen.",
+    rows: [
+      projectRow(
+        "Groovy-Dynamik im Kernbackend",
+        [75, 20, 5],
+        "RevidaCon nutzt Groovy stark dynamisch: `def`, Maps, dynamische Params, Criteria-Closures und Runtime-Resolution. Das macht schnellen Legacy-Code möglich, aber erschwert statische Analyse.",
+        "Für den Neubau würde ich Kernlogik in Java oder streng typisiertem Kotlin/Java schreiben. Groovy sollte nicht das Fundament neuer Fachlogik sein.",
+        "Sehr hoch",
+        "AI und Menschen profitieren massiv von Typen, klaren Methoden und Compilerfeedback. Der aktuelle Stil versteckt viele Verträge.",
+        "Sehr hoch",
+        "def ajaxDoAction() {\n    Map additionalParams = JsonUtil.parseJsonStringToMap(params.additionalData)\n    contractAccessionService.doActionOnAccessions([params.id.toLong()], action, additionalParams)\n}",
+        "record DoAccessionActionRequest(long id, long actionId, ActionData data) {}\n\nvoid doAction(DoAccessionActionRequest request, CurrentUser user) { ... }",
+        "Der IST-Code akzeptiert dynamische Maps und Params. Fehler erscheinen oft erst zur Laufzeit.",
+        "Der SOLL-Code macht Eingaben als Typen sichtbar. Das hilft Tests, OpenAPI und AI-generierten Änderungen.",
+      ),
+      projectRow(
+        "Statische Typisierung für DTOs und Commands",
+        [0, 5, 95],
+        "DTOs, Commands und Query-Filter sind im Rewrite zentrale Verträge. Sie sollten strikt typisiert sein.",
+        "Java Records passen sehr gut für API-Antworten, Commands, Filter und Exportmodelle. Sie sollten bevorzugt werden, solange keine komplexe Objektidentität gebraucht wird.",
+        "Sehr hoch",
+        "Typisierte Verträge reduzieren Missverständnisse zwischen Backend, Frontend, Tests und AI.",
+        "Sehr hoch",
+        "Map result = [success: true, actionTitle: actionTitle, data: marshallResult.data]\nrender result as JSON",
+        "record ContractAccessionModalResponse(\n    boolean success,\n    String actionTitle,\n    List<AccessionRow> data,\n    Map<String, State> stateMap\n) {}",
+        "Der IST-Code baut JSON oft über Maps zusammen.",
+        "Der SOLL-Code hat einen expliziten Antwortvertrag, der dokumentiert, getestet und exportiert werden kann.",
+      ),
+      projectRow(
+        "Enums statt persistenter SelectTwo-Service-Klassen",
+        [15, 65, 20],
+        "RevidaCon enthält viele EnumSelectTwoServices. Manche bilden echte fachliche Wertemengen ab, andere sind UI-Hilfsstrukturen für Select2.",
+        "Fachliche Wertemengen sollten als Enums oder Referenztabellen modelliert werden. UI-Auswahllisten sollten aus API-Endpunkten entstehen, nicht als Service-Klasse pro Dropdown.",
+        "Mittel",
+        "Es gibt sehr viele SelectTwo-Service-Klassen. Beim Rewrite kann das stark vereinfacht werden.",
+        "Hoch",
+        "class ContractAccessionStatusService extends ...SelectTwoService { ... }\nclass MarketSegmentEnumSelectTwoService { ... }",
+        "enum ContractAccessionStatus { PARTICIPATION, CANCELED, OPTED_OUT }\n\nGET /api/reference-data/contract-accession-statuses",
+        "Der IST-Code vermischt fachliche Wertemenge und alte UI-Komponente.",
+        "Der SOLL-Code trennt Fachmodell von Frontend-Auswahl.",
+      ),
+      projectRow(
+        "Service-Locator und statische getServiceFromContext-Aufrufe",
+        [90, 5, 5],
+        "Viele Services holen andere Services über statische Helfer. Dadurch werden Abhängigkeiten versteckt und Tests schwerer.",
+        "Neue Klassen sollten Konstruktor-Injektion nutzen. Statische Context-Zugriffe sollten nur in Übergangsadaptern existieren, nicht in Fachlogik.",
+        "Sehr hoch",
+        "Das ist einer der deutlichsten Anti-Patterns für AI-Development in diesem Projekt.",
+        "Mittel",
+        "private ContractFileService getContractFileService() {\n    return ContractFileService.getServiceFromContext()\n}",
+        "class ContractService {\n    ContractService(ContractFileService contractFiles, AuthorizationPolicy authorization) { ... }\n}",
+        "Im IST-Code sieht man die echte Abhängigkeit nicht am Klassenrand.",
+        "Im SOLL-Code kann AI und Reviewer sofort erkennen, welche Kollaboratoren relevant sind.",
+      ),
+      projectRow(
+        "Null/Map/def durch explizite Optionalität ersetzen",
+        [10, 65, 25],
+        "Im Legacy-Code sind `null`, leere Strings, Magic Dates und dynamische Maps häufig. Das ist typisch für ältere Grails-Anwendungen.",
+        "Im Neubau sollten optionale Werte explizit modelliert werden: nullable API-Felder bewusst, Commands validiert, interne Logik mit klaren Typen.",
+        "Hoch",
+        "Viele Fehler in alten Systemen entstehen nicht aus Algorithmen, sondern aus unklaren Zuständen.",
+        "Hoch",
+        "if( params.startDate == \"01.01.0001 00:00:00\" ) {\n    params.startDate = null\n}",
+        "record AccessionFilter(Optional<Instant> startDate, Optional<Instant> endDate) {}\n\n@AssertTrue boolean hasValidRange() { ... }",
+        "Der IST-Code nutzt Sentinel-Werte und mutable Params.",
+        "Der SOLL-Code macht Optionalität und Validierung explizit.",
+      ),
+    ],
+  },
+  {
+    id: "architecture-patterns",
+    label: "Muster & AI-Workflow",
+    subtitle: "Welche Programmiermuster beim Neubau helfen oder schaden.",
+    rows: [
+      projectRow(
+        "Vertical Slice Architecture",
+        [0, 15, 85],
+        "Für RevidaCon ist Vertical Slice besonders passend, weil sehr viele fachliche Abläufe durch alte technische Schichten laufen.",
+        "Der Rewrite sollte pro Use Case geschnitten werden: ContractAccession anzeigen, Aktion ausführen, Import prüfen, Datei abrufen, Export erzeugen.",
+        "Sehr hoch",
+        "Dadurch bekommen AI und Reviewer genau den Kontext, den sie für eine Änderung brauchen.",
+        "Sehr hoch",
+        "ContractAccessionController -> BaseController -> ContractAccessionService -> BackboneService -> Domain -> GSP/Backbone",
+        "features/accessions/action\n  AccessionActionController\n  AccessionActionService\n  AccessionActionRepository\n  AccessionActionResponse",
+        "Der IST-Pfad verteilt einen Ablauf über sehr viele historische Stellen.",
+        "Der SOLL-Pfad bündelt den Ablauf ohne gemeinsame Regeln zu duplizieren.",
+      ),
+      projectRow(
+        "Base Classes als Standardmuster",
+        [90, 10, 0],
+        "BaseController und BaseService sind in RevidaCon extrem häufig. Sie reduzieren Boilerplate, verstecken aber Verhalten.",
+        "Beim Neubau sollten Basisklassen nicht als Standard zurückkommen. Wiederverwendung lieber über Komposition, kleine Helper oder explizite Modulservices.",
+        "Sehr hoch",
+        "Die alten Basisklassen sind wahrscheinlich einer der Hauptgründe für die Unübersichtlichkeit.",
+        "Sehr hoch",
+        "class ImportProductController extends AbstractExtendedBaseDomainController<ImportProduct> { ... }",
+        "class ImportProductController {\n    private final ImportProductPage page;\n    private final ImportProductCommandHandler commands;\n}",
+        "Der IST-Code erbt Verhalten, das man für Review erst suchen muss.",
+        "Der SOLL-Code zeigt Verantwortung und Abhängigkeiten direkt.",
+      ),
+      projectRow(
+        "DRY bei fachlichen Regeln, nicht bei jeder CRUD-Form",
+        [5, 75, 20],
+        "RevidaCon wirkt stark DRY über generische CRUD-/Backbone-Abstraktionen. Das spart Code, erzeugt aber hohe kognitive Kopplung.",
+        "Im Neubau sollten fachliche Regeln zentral bleiben, aber ähnliche Controller- oder Tabellenformen dürfen lokal verständlich sein.",
+        "Hoch",
+        "Zu aggressive Wiederverwendung erschwert AI-Änderungen, weil kleine Anpassungen alte Framework-Pfade berühren.",
+        "Sehr hoch",
+        "AbstractExtendedBaseDomainController<T>\nAbstractExtendedBaseDomainService<T>\nTableConfigStorageDatatablesMarshaller<T>",
+        "void assertCanChangeAccessionStatus(...) { ... }\n\n// lokale API-Methoden dürfen ähnlich aussehen, wenn sie klar bleiben.",
+        "Der IST-Code abstrahiert technische Formen stark.",
+        "Der SOLL-Code abstrahiert gemeinsame fachliche Wahrheit, nicht jedes Formularmuster.",
+      ),
+      projectRow(
+        "CQRS-light für Listen und Schreibaktionen",
+        [5, 50, 45],
+        "RevidaCon hat sehr komplexe Listen, Filter und Tabellen plus fachliche Schreibaktionen. Ein einziges Domainmodell für alles ist zu schwer.",
+        "Ich würde kein großes CQRS-System bauen, aber Lese- und Schreibmodelle innerhalb des Backends bewusst trennen.",
+        "Hoch",
+        "Damit werden große Tabellen performanter und Schreibregeln klarer testbar.",
+        "Hoch",
+        "ContractAccession Domain wird für Tabellen, Modal, Aktionen, Validierung und Statusberechnung genutzt.",
+        "record AccessionTableRow(...)\nrecord ChangeAccessionStatusCommand(...)\n\nclass AccessionQueries {}\nclass AccessionCommands {}",
+        "Der IST-Code nutzt Domainobjekte für viele unterschiedliche Zwecke.",
+        "Der SOLL-Code erlaubt optimierte Read Models und klare Commands.",
+      ),
+      projectRow(
+        "AI-Workflow mit Export + Akzeptanztests",
+        [0, 5, 95],
+        "Für RevidaCon sollte AI nicht nur Code generieren, sondern innerhalb eines vorgegebenen Architekturrahmens arbeiten.",
+        "Jeder Slice sollte den Modern-Coding-Export, echte Legacy-Beispiele, gewünschte API-Verträge und Akzeptanztests als Kontext bekommen.",
+        "Sehr hoch",
+        "Das verhindert, dass AI den alten Grails/Backbone-Stil kopiert.",
+        "Niedrig",
+        "Prompt: \"Baue ContractAccession neu\"\n// ohne Regeln übernimmt AI wahrscheinlich Controller/Service/Entity-Struktur.",
+        "Prompt enthält:\n- RevidaCon Architektur-Export\n- Slice-Ziel\n- erlaubte Dependencies\n- Testfälle\n- Beispielantworten",
+        "Ohne Kontext ist die Legacy-Struktur das naheliegendste Trainingssignal.",
+        "Mit explizitem Export wird AI auf die Zielarchitektur ausgerichtet.",
+      ),
+    ],
+  },
+  {
+    id: "dependencies",
+    label: "Dependencies",
+    subtitle: "Welche Abhängigkeiten beim Neubau bleiben, ersetzt oder gestrichen werden sollten.",
+    rows: [
+      projectRow(
+        "Grails/GORM/Hibernate als Kernplattform",
+        [70, 25, 5],
+        "Das aktuelle Projekt nutzt Grails 6, GORM/Hibernate, GSP, Asset Pipeline und viele Grails-Plugins als Anwendungsfundament.",
+        "Für einen kompletten modernen Rewrite würde ich Grails nicht als Zielplattform wählen. Spring Boot mit expliziten APIs, JDBC/jOOQ oder gezielt JPA wäre für AI-Review und langfristige Wartung besser nachvollziehbar.",
+        "Sehr hoch",
+        "Die Plattform bestimmt fast alle weiteren Muster: Controller, Domain-Entities, Plugins, UI-Auslieferung und Tests.",
+        "Sehr hoch",
+        "implementation \"org.grails:grails-web-boot\"\nimplementation(\"org.grails.plugins:hibernate5:8.1.1\")\nimplementation \"org.grails.plugins:database-migration:4.2.1\"",
+        "Spring Boot 3 / Java 21+\nFlyway oder Liquibase\nJDBC, jOOQ oder gezielt JPA pro Modul\nREST/OpenAPI als primärer Vertrag",
+        "Grails bringt viel Magie und Konvention mit. Das war früher produktiv, erschwert aber heute Kontextkontrolle und gezielten Rewrite.",
+        "Die Zielplattform sollte explizite Verträge, klare Startup-Konfiguration und gut testbare Slices unterstützen.",
+      ),
+      projectRow(
+        "AOE-interne Plugin-Wolke",
+        [55, 35, 10],
+        "Das Projekt hängt stark an internen AOE-Bibliotheken wie aoe-base, aoe-backbone, aoe-file-manager, aoe-security-manager, aoe-datatables und weiteren.",
+        "Beim Rewrite sollten diese Abhängigkeiten nicht pauschal übernommen werden. Jede muss eine konkrete Fähigkeit rechtfertigen: Security, File Storage, Tabellenkonfiguration, PDF, Messaging usw.",
+        "Sehr hoch",
+        "Interne Plugins sind ein großer Lock-in- und Verständnisfaktor. Ohne klare Entscheidung baut man den alten Framework-Unterbau erneut.",
+        "Sehr hoch",
+        "implementation \"de.cse.aoe.grails:aoe-backbone:cse-4.2.0.0\"\nimplementation \"de.cse.aoe.grails:aoe-file-manager:cse-4.0.0.5\"\nimplementation \"de.cse.aoe.grails:aoe-security-manager:cse-4.1.0.1\"",
+        "interface ObjectStorage { ... }\ninterface AuthorizationPolicy { ... }\n\n// AOE-Fähigkeiten nur als Adapter übernehmen, nicht als Architekturzentrum.",
+        "Aktuell bilden viele interne Plugins die eigentliche Plattform. Das macht Codeverstehen abhängig von fremdem Framework-Wissen.",
+        "Im Neubau sollten wir Fähigkeiten als kleine Provider-Grenzen definieren und nur nötige Implementierungen anbinden.",
+      ),
+      projectRow(
+        "Mehrere Datenbanktreiber",
+        [60, 30, 10],
+        "Das Projekt enthält PostgreSQL, MSSQL und MySQL-Treiber. Das kann historisch gewachsen oder integrationsbedingt sein.",
+        "Für den neuen Kern sollte genau eine primäre relationale Datenbank festgelegt werden. Weitere Datenbanken gehören in explizite Integrationsadapter.",
+        "Hoch",
+        "Mehrere DB-Treiber erhöhen Testmatrix, Konfigurationsaufwand und Unsicherheit bei SQL-Verhalten.",
+        "Mittel",
+        "implementation 'org.postgresql:postgresql:42.7.7'\nimplementation 'com.microsoft.sqlserver:mssql-jdbc:7.2.2.jre8'\nimplementation 'com.mysql:mysql-connector-j:8.0.33'",
+        "runtimeOnly 'org.postgresql:postgresql'\n\ninterface ExternalCatalogClient { ... }\n// MSSQL/MySQL nur in getrennten Adaptermodulen, falls fachlich nötig.",
+        "Die Build-Datei zeigt mehrere mögliche Datenbankwelten im selben Backend.",
+        "Die neue Architektur sollte zwischen eigener Persistenz und Fremdsystem-Zugriff unterscheiden.",
+      ),
+      projectRow(
+        "PDF/Excel/CSV als explizite Import/Export-Module",
+        [5, 35, 60],
+        "PDF, Excel und CSV sind fachlich wichtig: Preislisten, Vertragsdokumente, VTV/PQV-Dateien, Fehlerprotokolle und Exporte.",
+        "Diese Fähigkeiten sollten bleiben, aber isoliert werden. Parsing, Validierung, Fehlerreporting und Persistenz sollten nicht in generischen Controllern verschwimmen.",
+        "Hoch",
+        "Import/Export scheint ein Kernprozess zu sein und ist für einen Rewrite besonders test- und datenintensiv.",
+        "Hoch",
+        "implementation 'org.apache.poi:poi-ooxml:4.1.2'\nimplementation 'org.apache.commons:commons-csv:1.14.1'\nimplementation 'org.apache.pdfbox:pdfbox:2.0.36'",
+        "modules/imports\n  PriceImportParser\n  ImportValidationReport\nmodules/exports\n  ContractExportService\n\n// Parser-Tests mit realistischen Fixtures",
+        "Die Dependencies sind grundsätzlich sinnvoll, aber aktuell Teil eines sehr breiten Monolithen.",
+        "Im Neubau sollten Datei-Formate eigene Modulgrenzen und testbare Verträge bekommen.",
+      ),
+    ],
+  },
+  {
+    id: "persistence",
+    label: "Persistence & Entities",
+    subtitle: "GORM-Domain-Modell kritisch für den Rewrite bewerten.",
+    rows: [
+      projectRow(
+        "JPA-Entities als 1:1-Ersatz für GORM-Domains",
+        [80, 15, 5],
+        "Die naheliegende, aber gefährliche Migration wäre: jede GORM-Domainklasse wird eine JPA-Entity. Bei RevidaCon würde das ein großes, historisch gewachsenes Objektmodell konservieren.",
+        "Ich würde JPA-Entities nicht als Standardersatz verwenden. Für einige echte Aggregate können Entities sinnvoll sein; Listen, Reports, Importe und API-Antworten sollten eigene Modelle/Queries bekommen.",
+        "Sehr hoch",
+        "Das ist eine der wichtigsten Rewrite-Entscheidungen. Sie entscheidet, ob der neue Code wirklich besser wird oder nur modernere Syntax für alte Kopplung bekommt.",
+        "Sehr hoch",
+        "class ContractAccession {\n    static belongsTo = [partnerLocationIk: PartnerLocationIK, contractUuid: ContractUuid]\n    static hasMany = [statusChanges: ContractAccessionStatusChange]\n}",
+        "@Entity\nclass ContractAccessionAggregate { ... }\n\nrecord ContractAccessionListRow(long id, String ik, String contractName, String status) {}",
+        "Der IST-Code nutzt GORM-Domains für Persistenz, Beziehungen, Validierung und Fachlogik gleichzeitig.",
+        "Der SOLL-Code trennt Aggregate für Schreibregeln von Read Models für API/Tabellen.",
+      ),
+      projectRow(
+        "Repository pro Entity",
+        [70, 25, 5],
+        "Bei 274 Domain-Klassen würde ein Repository pro Entity eine riesige neue Durchreichschicht erzeugen.",
+        "Repositories sollten pro Use Case oder Aggregate-Grenze entstehen. Reine CRUD-Repositories für jede Tabelle helfen hier kaum.",
+        "Hoch",
+        "Zu viele Repositories würden AI und Menschen wieder durch viele Dateien schicken, ohne Verantwortung zu gewinnen.",
+        "Sehr hoch",
+        "interface ContractAccessionRepository extends JpaRepository<ContractAccessionEntity, Long> {}\ninterface ContractUuidRepository extends JpaRepository<ContractUuidEntity, Long> {}",
+        "class ContractAccessionQueries {\n    Page<AccessionRow> search(AccessionFilter filter, UserScope scope) { ... }\n}\n\nclass ContractAccessionCommands { ... }",
+        "Der IST-Nachbau wäre formal sauber, aber nicht fachlich hilfreicher.",
+        "Der SOLL-Schnitt orientiert sich an Lesen, Schreiben und fachlichen Grenzen.",
+      ),
+      projectRow(
+        "DTOs und API-Records",
+        [0, 15, 85],
+        "RevidaCon braucht sehr viele Antwortformen: Tabellenzeilen, Modals, Importberichte, Statusänderungen, Datei-Metadaten und Referenzdaten.",
+        "DTOs/Records sollten explizit und nahe am Use Case stehen. Alte Marshalling-Maps sollten nicht übernommen werden.",
+        "Sehr hoch",
+        "Klare DTOs sind für neues Frontend, OpenAPI, Tests und AI-Codegen zentral.",
+        "Hoch",
+        "Map result = [success: true, data: marshallResult.data, stateMap: marshallResult.stateMap]\nrender result as JSON",
+        "record AccessionActionPreview(\n    boolean success,\n    List<AccessionActionRow> data,\n    AccessionActionState state\n) {}",
+        "Aktuell entstehen Verträge oft implizit über Maps und Marshaller.",
+        "Im Rewrite sollten Verträge typisiert und dokumentierbar sein.",
+      ),
+      projectRow(
+        "Separate Mapper/Marshaller-Klassen",
+        [40, 45, 15],
+        "RevidaCon nutzt viele Marshaller für Backbone, Datatables und TableConfigStorage. Manche kapseln echte Komplexität, andere verstecken nur Felder.",
+        "Beim Neubau sollten einfache Mappings lokal bleiben. Komplexe, wiederverwendete Projektionen dürfen eigene Mapper bekommen, aber nicht als genereller Zwang.",
+        "Mittel",
+        "Mapping ist häufig, aber nicht jedes Mapping rechtfertigt eine Klasse. Zu viele Mapper verlängern Änderungspfade.",
+        "Hoch",
+        "contractAccessionService.createTableConfigStorageMarshaller(storageName, params)\nmarshallForBackbone(instance)",
+        "return new AccessionRow(\n    rs.getLong(\"id\"),\n    rs.getString(\"ik\"),\n    rs.getString(\"contract_name\")\n);",
+        "Der IST-Code enthält frameworkgebundene Marshaller.",
+        "Der SOLL-Code hält kleine Projektionen nahe an Query/API und lagert nur echte Komplexität aus.",
+      ),
+      projectRow(
+        "274 GORM-Domain-Klassen",
+        [65, 30, 5],
+        "RevidaCon hat viele GORM-Domain-Klassen. Sie enthalten Datenstruktur, Constraints, Mapping, Beziehungen, Callback-Logik und teilweise fachliche Berechnungen.",
+        "Beim Neubau sollten die Tabellen und fachlichen Begriffe bleiben, aber die Domain-Klassen nicht automatisch als JPA/GORM-Entities übernommen werden. Für API-Lesen und komplexe Filter sind SQL-nahe Read Models oft besser.",
+        "Sehr hoch",
+        "Das Persistenzmodell ist der Kern des Rewrite-Risikos. Wenn wir das alte Entity-Netz kopieren, bleibt die Komplexität erhalten.",
+        "Sehr hoch",
+        "class ContractAccession {\n    static belongsTo = [partnerLocationIk: PartnerLocationIK, contractUuid: ContractUuid]\n    static hasMany = [statusChanges: ContractAccessionStatusChange]\n    static constraints = { ... }\n}",
+        "record ContractAccessionPageRow(long id, String ik, String contractName, String status) {}\n\nreturn jdbc.query(sql, rowMapper, filters...);",
+        "Das aktuelle Modell koppelt Beziehungen, Validierung und Lebenszyklus an GORM-Domain-Objekte.",
+        "Der Rewrite sollte zwischen Schreibmodell, Lesemodell und API-Antwort unterscheiden. Entities nur dort verwenden, wo ein echtes Aggregate sinnvoll ist.",
+      ),
+      projectRow(
+        "Domain-Callbacks und abgeleiteter Zustand",
+        [70, 25, 5],
+        "Domain-Klassen nutzen `beforeUpdate`, `beforeInsert`, transiente Getter und Statusberechnungen. Das versteckt Seiteneffekte im Persistenzlebenszyklus.",
+        "Für AI-Entwicklung sollten Änderungen an Status, Prüfungen und Fristen explizite Use Cases sein, nicht versteckte Entity-Callbacks.",
+        "Sehr hoch",
+        "Callbacks sind schwer zu finden und können bei Migrationen oder Tests unerwartete Nebenwirkungen erzeugen.",
+        "Hoch",
+        "boolean beforeUpdate() {\n    updateAllRequirementsChecked()\n    updateAllRequirementsCheckedUntil()\n    modified = new Date()\n}",
+        "@Transactional\nvoid recalculateRequirementState(long accessionId) {\n    var state = rules.evaluate(accessionId);\n    accessions.updateRequirementState(accessionId, state);\n}",
+        "Aktuell passieren fachliche Änderungen automatisch beim Speichern.",
+        "Im Neubau sollten solche Änderungen als benannte Use Cases und Tests sichtbar sein.",
+      ),
+      projectRow(
+        "Criteria-/GORM-Queries in Services",
+        [35, 55, 10],
+        "Viele Services bauen dynamische Criteria-Queries. Das ist flexibel, aber schwer zu analysieren und oft eng an GORM gebunden.",
+        "Für neue APIs sollten komplexe Listen/Filter als explizite Query-Objekte oder SQL/jOOQ-Abfragen modelliert werden. Wichtig sind messbare Pläne, Indizes und klare Parameter.",
+        "Hoch",
+        "Listen, Filter und Berechtigungen sind zentrale UI-Funktionen. Sie bestimmen Performance und Korrektheit.",
+        "Hoch",
+        "protected void additionalFiltering(HibernateCriteriaBuilder hcb, Map params) {\n    if(params.additionalParams.status) {\n        hcb.in(\"cuuid.status\", params.additionalParams.status)\n    }\n}",
+        "SELECT ...\nFROM contract_accession ca\nJOIN contract_uuid cu ON cu.id = ca.contract_uuid_id\nWHERE (:status IS NULL OR cu.status = ANY(:status))\n  AND ca.deleted = false",
+        "Criteria-Code ist oft über Basisklassen, Params und Aliase verteilt.",
+        "Explizite Queries sind für AI, Review und Performanceanalyse besser greifbar.",
+      ),
+    ],
+  },
+  {
+    id: "backend-api",
+    label: "Backend & API",
+    subtitle: "Controller, Services, Berechtigungen und API-Verträge neu schneiden.",
+    rows: [
+      projectRow(
+        "252 generische Base-/Backbone-Controller",
+        [80, 15, 5],
+        "Sehr viele Controller erben von generischen Base-Domain-Controllern oder Backbone-Controllern. Dadurch steckt Verhalten außerhalb der konkreten Datei.",
+        "Beim Rewrite sollten keine BaseController als Standard entstehen. Controller sollen konkrete HTTP-Verträge haben und Use Cases aufrufen.",
+        "Sehr hoch",
+        "Das ist einer der stärksten Gründe, warum der aktuelle Code schwer zu verstehen ist.",
+        "Sehr hoch",
+        "class ContractAccessionController extends AbstractExtendedBaseDomainController<ContractAccession> {\n    def ajaxDTList() { ... }\n}",
+        "@GetMapping\nContractAccessionPage list(ContractAccessionFilter filter, CurrentUser user) {\n    return listAccessions.handle(filter, user);\n}",
+        "Der IST-Code versteckt Standardverhalten und mischt UI-Ajax, Tabellenlogik und Fachaktionen.",
+        "Der SOLL-Code macht den API-Vertrag und den Use Case direkt sichtbar.",
+      ),
+      projectRow(
+        "Service-Locator / getServiceFromContext",
+        [85, 10, 5],
+        "An vielen Stellen werden Services über statische Helfer oder den Grails ApplicationContext geholt. Das verschleiert Abhängigkeiten.",
+        "Im neuen Code sollten Abhängigkeiten über Konstruktoren sichtbar sein. Das hilft Tests, AI-Kontext und Review.",
+        "Sehr hoch",
+        "Versteckte Abhängigkeiten sind Gift für nachvollziehbare Änderungspfade.",
+        "Mittel",
+        "private UserService getUserService() {\n    return UserService.getServiceFromContext()\n}",
+        "class ContractService {\n    ContractService(UserService users, ContractFileService files) { ... }\n}",
+        "Im aktuellen Code sieht man nicht zuverlässig am Konstruktor, was ein Service braucht.",
+        "Konstruktor-Injektion macht die Kollaboratoren und Modulgrenzen sichtbar.",
+      ),
+      projectRow(
+        "Berechtigungen nahe am Use Case",
+        [5, 60, 35],
+        "RevidaCon hat komplexe Rollen, Partner-/IK-Sichtbarkeit und objektbezogene Rechte. Das darf nicht vereinfacht werden.",
+        "Berechtigungen sollten im Rewrite explizit am Use Case oder Query-Pfad modelliert werden. Rollen allein reichen nicht.",
+        "Sehr hoch",
+        "Falsche Berechtigungen wären ein schwerwiegender fachlicher und rechtlicher Fehler.",
+        "Sehr hoch",
+        "if( Authority.has(Authority.ROLE_ADMIN) ) return true\nSet<Long> userIds = listAccessibleUserIdsForCurrentUser(params.permissionParams)",
+        "authorization.assertCanReadAccession(user, accessionId)\n\nWHERE ca.partner_id = ANY(:accessiblePartnerIds)",
+        "Aktuell sind Berechtigungen teils in Services, Criteria und Hilfsklassen verteilt.",
+        "Im Neubau sollte jede API ihre Berechtigungsregel sichtbar und testbar machen.",
+      ),
+      projectRow(
+        "REST/OpenAPI als primärer Vertrag",
+        [0, 30, 70],
+        "Es gibt bereits neuere REST-API-Ansätze unter `src/main/groovy/de/cse/api/v2`, aber große Teile laufen noch über Grails/Backbone/Ajax.",
+        "Für den Neubau sollte OpenAPI-first oder zumindest OpenAPI-sichtbar gearbeitet werden. Das ist ideal für AI, Frontend und Tests.",
+        "Hoch",
+        "Ein sauberer API-Vertrag verhindert, dass Frontend und Backend wieder implizit über GSP/Backbone gekoppelt werden.",
+        "Mittel",
+        "@RestController\n@RequestMapping(\"/restApi/v2/file\")\nclass FileApiController {\n    @GetMapping(\"/get\") ResponseEntity<FileGetResponse> get(...) { ... }\n}",
+        "@Tag(name = \"Contract Accessions\")\n@GetMapping(\"/api/contracts/accessions\")\nContractAccessionPage page(@Valid ContractAccessionFilter filter) { ... }",
+        "Der v2-API-Stil ist ein besserer Ansatz, nutzt aber noch Service-Locator und ist nicht der Hauptpfad.",
+        "Der Rewrite sollte diesen Weg konsequent machen: typed requests, typed responses, OpenAPI, Tests.",
+      ),
+    ],
+  },
+  {
+    id: "frontend-legacy",
+    label: "Frontend Legacy",
+    subtitle: "GSP/Backbone nicht portieren, sondern Oberfläche neu schneiden.",
+    rows: [
+      projectRow(
+        "Backbone/GSP UI",
+        [90, 10, 0],
+        "Das Projekt enthält sehr viele GSP-Views und Backbone-Modelle/Views/Collections. Diese UI ist historisch gewachsen und eng an Grails-Controller gekoppelt.",
+        "Für einen modernen Rewrite sollte diese UI nicht migriert werden. Besser: neues Frontend mit klaren API-Verträgen und fachlichen Screens.",
+        "Sehr hoch",
+        "Die alte UI-Struktur ist ein großer Komplexitätstreiber. Ein Neubau bietet hier den größten Qualitätsgewinn.",
+        "Sehr hoch",
+        "var ContractUuid = AoeModel.extend({\n    urlRoot: AoeEnvironment.createUrl(\"contractUuidBackbone\"),\n    defaults: { contractLegs: null, requirementOverview: null }\n});",
+        "type ContractUuid = {\n  id: number;\n  name: string;\n  status: ContractStatus;\n}\n\nconst { data } = useContractUuid(id);",
+        "Backbone-Modelle spiegeln große Backend-Objekte und bauen komplexe Client-Zustände manuell zusammen.",
+        "Ein neues Frontend sollte kleine, typisierte View Models vom Backend bekommen und Interaktion lokal kontrollieren.",
+      ),
+      projectRow(
+        "Servergerenderte Tabellen und Ajax-Fragmente",
+        [80, 15, 5],
+        "Viele Controller rendern Templates für Tabellenfragmente. Das koppelt Filter, Darstellung und Datenzugriff eng an Grails.",
+        "Beim Neubau sollten Tabellen über API-Endpunkte mit klaren Filter-/Sortierverträgen laufen. Die UI rendert selbst.",
+        "Hoch",
+        "Tabellen scheinen zentral für die Anwendung. Gerade dort brauchen Nutzer schnelle, verständliche und testbare Workflows.",
+        "Sehr hoch",
+        "render(template: \"/contractAccession/templates/listTableContent\", model: [storageId: params.filter])",
+        "GET /api/contracts/accessions?status=ACTIVE&page=1&sort=modified\n\nreturn new PageResponse<AccessionRow>(items, pageInfo);",
+        "Der IST-Code liefert HTML-Fragmente statt stabiler Datenverträge.",
+        "Der SOLL-Code trennt Datenvertrag und Darstellung. Das ist besser für moderne Frontends und AI-gestützte Änderungen.",
+      ),
+      projectRow(
+        "Table-Config als Produktfunktion prüfen",
+        [20, 55, 25],
+        "TableConfigStorage scheint eine echte Nutzerfunktion zu sein: gespeicherte Spalten, Tabellenkonfiguration und Exporte.",
+        "Diese Fähigkeit sollte fachlich bewertet und wahrscheinlich neu gebaut werden, aber nicht als altes Plugin übernommen werden.",
+        "Mittel",
+        "Wenn Nutzer stark mit Tabellen arbeiten, ist das wichtig. Es sollte aber nicht die neue Architektur dominieren.",
+        "Hoch",
+        "tableConfigStorageService.readTableConfigStorageFields(storageId)\ncontractAccessionService.createTableConfigStorageMarshaller(storageName, ...)",
+        "record TableViewConfig(List<String> columns, Sort sort, Filter filter) {}\n\nGET /api/table-configs/{viewKey}",
+        "Aktuell steckt Tabellenkonfiguration tief in Controller/Service-Marshalling.",
+        "Neu sollte es ein eigenes, kleines Feature mit Vertrag und Tests werden.",
+      ),
+    ],
+  },
+  {
+    id: "integrations-jobs",
+    label: "Integrationen & Jobs",
+    subtitle: "Importe, Dateien, Messaging und Hintergrundprozesse isolieren.",
+    rows: [
+      projectRow(
+        "Import-Jobs und Fehlerprotokolle",
+        [5, 35, 60],
+        "ImportTask, ImportProduct, PriceImport, PQV/HMV/VTV und Fehlerprotokolle wirken fachlich zentral.",
+        "Diese Prozesse sollten bleiben, aber als Pipeline modelliert werden: Upload, Parsing, Validierung, Review, Commit, Report.",
+        "Sehr hoch",
+        "Beim Rewrite sind Importe ein Kernrisiko, weil sie Datenqualität und Fachregeln bündeln.",
+        "Hoch",
+        "ImportTaskService\nImportProductPriceService\nImportTaskErrorProtocolPdfService",
+        "ImportPipeline\n  parse(file)\n  validate(rows)\n  preview(errors)\n  commit(validRows)\n  exportReport()",
+        "Aktuell sind Import-Fähigkeiten über viele Services und Domain-Klassen verteilt.",
+        "Eine Pipeline macht Zustände und Fehler für Nutzer, Tests und AI deutlich besser handhabbar.",
+      ),
+      projectRow(
+        "File Storage und Google Cloud Storage",
+        [0, 45, 55],
+        "Dateien sind wichtig: Vertragsdateien, Importdateien, PDF-Reports, Anhänge. Das Projekt nutzt File-Manager und Google Cloud Storage.",
+        "Storage sollte als explizite Provider-Grenze bleiben, aber nicht an Grails-Domainmodelle gekoppelt sein.",
+        "Hoch",
+        "Dateien sind fachlich kritisch und berühren Sicherheit, Audit, Lebenszyklus und Kosten.",
+        "Hoch",
+        "implementation 'com.google.cloud:google-cloud-storage'\nimplementation \"de.cse.aoe.grails:aoe-file-manager:cse-4.0.0.5\"",
+        "interface ObjectStorage {\n    StoredFile read(FileKey key);\n    FileKey put(Upload upload);\n}\n\nclass GcsObjectStorage implements ObjectStorage { ... }",
+        "Die Fähigkeit ist wichtig, aber im alten Stack plugin- und domaingebunden.",
+        "Im Neubau sollte Storage ein kleiner technischer Provider sein, während Features Berechtigungen und Metadaten besitzen.",
+      ),
+      projectRow(
+        "Quartz/RabbitMQ/Cluster-Jobs",
+        [10, 55, 35],
+        "Das Projekt enthält Quartz, RabbitMQ und ClusteredJob-Domainklassen. Hintergrundverarbeitung ist real, aber historisch stark im Monolithen verankert.",
+        "Für den Rewrite sollten Hintergrundprozesse als explizite Jobs mit Idempotenz, Status, Retry und Observability modelliert werden.",
+        "Hoch",
+        "Jobs können Daten verändern und externe Systeme ansprechen. Ohne klare Grenzen sind sie schwer zu testen.",
+        "Mittel",
+        "implementation 'org.grails.plugins:quartz:3.0.0'\nimplementation 'org.grails.plugins:rabbitmq-native:3.5.1'\nclass ClusteredJob { ... }",
+        "record JobRun(id, type, status, startedAt, finishedAt) {}\n\njobRunner.run(new ImportPricesJob(fileId));",
+        "Aktuell sieht man verschiedene Mechanismen für Hintergrundarbeit.",
+        "Neu sollte ein einheitliches Job-Modell mit klaren Zuständen und Tests entstehen.",
+      ),
+    ],
+  },
+  {
+    id: "tests-migration",
+    label: "Tests & Migration",
+    subtitle: "Rewrite absichern statt alten Code nur nachzubauen.",
+    rows: [
+      projectRow(
+        "Characterization Tests vor Rewrite",
+        [0, 20, 80],
+        "Bei chaotischem Legacy-Code sind Charakterisierungstests wichtig: Sie dokumentieren, was heute fachlich passieren muss, auch wenn der Code schlecht ist.",
+        "Vor jedem Modul-Rewrite sollten Kernfälle gegen aktuelle Fixtures oder Datenextrakte festgehalten werden.",
+        "Sehr hoch",
+        "Ohne solche Tests merkt man erst spät, dass der Neubau fachliche Sonderfälle verloren hat.",
+        "Mittel",
+        "src/test/groovy/de/cse/aoe/rv/contractAccession/ContractAccessionServiceIntSpec.groovy\nsrc/test/resources/pqv/*.xlsx",
+        "@Test\nvoid importedPriceRowsProduceExpectedValidationErrors() {\n    var report = importPipeline.preview(file);\n    assertThat(report.errors()).contains(...);\n}",
+        "Es gibt Tests und reale Testressourcen, aber sie sind noch nicht als Rewrite-Vertrag strukturiert.",
+        "Der Neubau sollte pro Modul Akzeptanztests aus realen Legacy-Fällen bekommen.",
+      ),
+      projectRow(
+        "Schema-Migration als eigenes Projekt",
+        [0, 45, 55],
+        "Die Datenbank ist groß und historisch. Es gibt Migrationen, aber der Rewrite braucht zusätzlich eine Datenübernahme-Strategie.",
+        "Für den Neubau sollte früh entschieden werden: neues Schema, Migrationsskripte, Parallelbetrieb, Read-only-Vergleich oder Big-Bang.",
+        "Sehr hoch",
+        "Datenmigration ist bei 274 Domain-Klassen und vielen Beziehungen wahrscheinlich der größte operative Risikoblock.",
+        "Hoch",
+        "grails-app/migrations\nstatic mapping = { table \"contract_accession\" }",
+        "migrations/\n  V001__target_schema.sql\n  V100__import_legacy_contracts.sql\n\nlegacy_diff_tests/",
+        "Aktuell ist das Schema an GORM-Mapping und alte Migrationen gekoppelt.",
+        "Die neue Datenmigration sollte unabhängig testbar sein und fachliche Prüfberichte erzeugen.",
+      ),
+      projectRow(
+        "AI-Startkontext aus Architekturentscheidungen",
+        [0, 10, 90],
+        "Die hier erstellte Projektmatrix soll nicht nur Doku sein. Sie ist ein Arbeitsvertrag für AI-gestützte Umsetzung.",
+        "Für jeden Rewrite-Slice sollte die AI den Export dieser Matrix plus Modul-Akzeptanztests bekommen. So sind Prioritäten, No-Gos und Zielmuster direkt sichtbar.",
+        "Hoch",
+        "Das reduziert die Gefahr, dass AI alte Muster kopiert oder wichtige Projektentscheidungen ignoriert.",
+        "Niedrig",
+        "Prompt: \"Rewrite ContractAccessionController in Spring Boot\"\n// Ohne Kontext kopiert AI wahrscheinlich die alte Controller-Struktur.",
+        "Prompt enthält:\n- RevidaCon-Analyse-Export\n- Modulziel\n- Akzeptanztests\n- erlaubte Dependencies\n- gewünschte API-Verträge",
+        "Ohne explizite Leitplanken tendiert AI dazu, sichtbare Legacy-Muster fortzuschreiben.",
+        "Mit Export und Tests kann AI zielgerichtet neu bauen statt nur zu übersetzen.",
+      ),
+    ],
+  },
+];
 export const analyses: ProjectAnalysis[] = [
-{
+  {
     id: "global",
     label: "Global / Allgemein",
     kind: "global",
@@ -895,17 +1781,82 @@ export const analyses: ProjectAnalysis[] = [
       },
       {
         id: "next",
-        label: "Frontend: Next.js",
-        subtitle: "App Router, Client-Interaktion und Grenze zum Backend.",
-        topics: nextTopics,
+        label: "Frontend: Next.js, React & Web",
+        subtitle: "Rendering, Komponenten, TypeScript, HTML, CSS, Daten, Tests und AI-Workflow.",
+        topics: globalFrontendTopics,
       },
     ],
   },
-...publicProjectAnalyses as ProjectAnalysis[]
+  {
+    id: "revidacon",
+    label: "RevidaCon",
+    kind: "project",
+    description: "Projektanalyse für den kompletten Rewrite eines großen, veralteten Grails/Groovy-Monolithen.",
+    frameworks: [
+      {
+        id: "backend-rewrite",
+        label: "Backend: RevidaCon Rewrite",
+        subtitle: "Grails/GORM/Backbone-Monolith analysieren und Zielarchitektur ableiten.",
+        topics: relevantRevidaconTopics([
+          revidaconFromGlobalTopic(
+            springTopics[0],
+            "Spring Boot",
+            "Globale Spring-Entscheidungen auf RevidaCon angewendet.",
+          ),
+          revidaconFromGlobalTopic(
+            springTopics[1],
+            "Java",
+            "Globale Java-Entscheidungen auf RevidaCon angewendet.",
+          ),
+          revidaconFromGlobalTopic(
+            springTopics[2],
+            "Programmiermuster",
+            "Globale Muster auf RevidaCon angewendet.",
+          ),
+          revidaconFromGlobalTopic(
+            springTopics[3],
+            "Closures",
+            "Globale Lambda-/Closure-Regeln auf RevidaCon angewendet.",
+          ),
+          ...revidaconBackendTopics,
+        ]),
+      },
+      {
+        id: "frontend-rewrite",
+        label: "Frontend: RevidaCon Rewrite",
+        subtitle: "Backbone/GSP-Abläufe in ein modernes Frontend übersetzen.",
+        topics: relevantRevidaconTopics([
+          revidaconFromGlobalTopic(
+            nextTopics[0],
+            "Next.js",
+            "Globale Next.js-Entscheidungen auf RevidaCon angewendet.",
+          ),
+        ]),
+      },
+    ],
+  },
+  {
+    id: "modern-coding",
+    label: "modern-coding",
+    kind: "project",
+    description: "Beispiel-Repository: Spring Boot Backend und Next.js Präsentationsfrontend.",
+    frameworks: [
+      {
+        id: "spring-java",
+        label: "Backend: Spring Boot & Java",
+        subtitle: "Einschätzung für ProfileController, ProfileService und die Demo-API.",
+        topics: withProjectEvidence("modern-coding", springTopics),
+      },
+      {
+        id: "next",
+        label: "Frontend: Next.js",
+        subtitle: "Einschätzung für Architektur-Explorer und Präsentationsoberfläche.",
+        topics: withProjectEvidence("modern-coding", nextTopics),
+      },
+    ],
+  },
 ];
-
 export const choices = ["Weglassen", "Neu definieren", "Nutzen"] as const;
-
 export function dominant(scores: Rating["scores"]): number {
   const max = Math.max(...scores);
   return scores.filter((score) => score === max).length > 1

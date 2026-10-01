@@ -751,6 +751,9 @@ tbody th {
   grid-template-columns: 1fr;
   gap: 18px;
   align-items: start;
+  max-width: calc(100cqw - 52px);
+  position: sticky;
+  left: 26px;
 }
 .detail-content .eyebrow {
   font-size: 8px;
@@ -1232,3 +1235,8 @@ footer a {
 .code-file-heading span { color: #52665d; }
 .code-file-heading code { overflow-wrap: anywhere; color: #203d32; }
 .code-part-description { margin: 0 0 10px; font-size: 11px; line-height: 1.7; }
+.analysis-references { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 10px 0; }
+.analysis-references a { color: #285e78; font-size: 11px; overflow-wrap: anywhere; }
+@container (max-width: 700px) {
+  .detail-description, .code-comparison { grid-template-columns: minmax(0, 1fr); }
+}

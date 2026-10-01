@@ -299,6 +299,8 @@ export default function ArchitectureExplorer() {
               occurrence: row.occurrence,
               explanation: row.explanation,
               assessment: row.reason,
+              references: row.references,
+              reviewedAt: row.reviewedAt,
               examples:
                 analysis.kind === "global" && recommendation === 2
                   ? {
@@ -306,6 +308,7 @@ export default function ArchitectureExplorer() {
                         label: "So ist es richtig",
                         description: row.recommendedDescription,
                         code: row.recommendedExample ?? row.currentExample,
+                        parts: row.recommendedParts,
                       },
                     }
                   : {
@@ -770,6 +773,16 @@ export default function ArchitectureExplorer() {
                                       WARUM DIESE TENDENZ?
                                     </span>
                                     <p>{row.reason}</p>
+                                    {Boolean(row.references?.length) && (
+                                      <div className="analysis-references">
+                                        {row.references?.map(reference => (
+                                          <a key={reference.url} href={reference.url} target="_blank" rel="noreferrer">
+                                            {reference.title}
+                                          </a>
+                                        ))}
+                                      </div>
+                                    )}
+                                    {row.reviewedAt && <small>Technischer Stand: {row.reviewedAt} · Gewichtung: eigene Einschätzung</small>}
                                   </div>
                                   {row.priorityReason && (
                                     <div>
@@ -791,7 +804,8 @@ export default function ArchitectureExplorer() {
                                     <div>
                                       <span>SO IST ES RICHTIG</span>
                                       <p>{row.recommendedDescription}</p>
-                                      <CodeBlock
+                                      <CodeParts
+                                        parts={row.recommendedParts}
                                         code={
                                           row.recommendedExample ??
                                           row.currentExample ??
@@ -861,18 +875,18 @@ export default function ArchitectureExplorer() {
               <p>
                 <strong>Einschätzungen, keine Messwerte.</strong> Die
                 Prozentwerte sind vorläufige subjektive Diskussionsgewichte für
-                unser SQL-orientiertes Beispiel. Sie sind keine
+                den jeweiligen Architekturkontext. Sie sind keine
                 Studienergebnisse oder Wahrscheinlichkeit, dass ein Feature
-                veraltet ist. „Weglassen“ gilt für diesen Ansatz, nicht pauschal
+                veraltet ist. „Weglassen“ gilt für das bewertete Muster, nicht pauschal
                 für jedes Projekt.
               </p>
             </div>
             <div className="next-note">
               <span className="eyebrow">ALS NÄCHSTES</span>
               <strong>
-                Next.js gemeinsam hinterfragen <span>↗</span>
+                Entscheidungen im Team prüfen <span>↗</span>
               </strong>
-              <p>Server Components, Datenzugriff und die Grenze zum Backend.</p>
+              <p>Produktbedarf, Teamkontext und überprüfbares Verhalten gegeneinander abwägen.</p>
             </div>
           </div>
           <footer>
