@@ -1,5 +1,74 @@
 # Modern Coding – Gesprächsleitfaden
 
+## Allgemeine Firmenvorstellung
+
+### Ablauf der sechs Folien
+
+Zeitbedarf: etwa 10–15 Minuten, anschließend Teamdiskussion.
+
+1. Unsere Arbeit verändert sich: Balken als Einstieg, keine Messwerte.
+2. Das Problem: für menschliche Entwicklung optimierte Konventionen neu prüfen.
+3. Die Idee: gemeinsam über die Gestaltung des AI-Workflows nachdenken.
+4. Spring Boot: technische und featureorientierte Paketstruktur mit denselben Rollen vergleichen. Keine Gegenüberstellung von OOP und Vertical Slices.
+5. Ein erster Gedankenstand: Recherche, Brainstorming und Explorer einordnen.
+6. Gemeinsam ausprobieren: Diskussion, JSON, Regeln und kleiner Pilot.
+
+Die integrierten Sprechnotizen sind der primäre Vortragstext und enthalten
+Übergänge. Die folgenden Detailnotizen und die Backend-Demo sind optionales
+Vertiefungsmaterial, keine zusätzlichen Pflichtfolien.
+
+### Kompakt starten und gezielt auslagern
+
+Sprechtext: "Ich würde mit einem überschaubaren Feature kompakt anfangen und
+zusätzliche Struktur erst einführen, wenn sie eine konkrete Verantwortung
+abbildet. Klare Funktionen können wir später auslagern. Dabei sichern wir zuerst
+das bestehende Verhalten durch Tests ab und erhalten Berechtigungen, Zustand und
+Transaktionen. KI kann die Extraktion unterstützen; wir prüfen das Ergebnis."
+
+Keine Garantie, dass Extraktion immer einfach oder billiger als Entfernen ist.
+Keine pauschale Ablehnung aller Abstraktionen. Schrittweise Migration ist möglich,
+aber parallele Logik braucht Verhaltensabgleich und einen Abschlussplan. Alte
+Implementierungen nicht dauerhaft stehen lassen oder Sicherheitsregeln nur in
+einer Variante korrigieren. Kleine, verständliche Methoden bleiben das Ziel.
+
+"Ich habe mir Gedanken über unseren Entwicklungsworkflow gemacht. Wenn KI einen
+größeren Teil der Implementierung übernimmt, verschiebt sich unsere Arbeit zum
+Beauftragen, Steuern und Prüfen. Welche Strukturen machen diesen Ablauf für uns
+nachvollziehbar? Ich habe privat mit ChatGPT gebrainstormt und recherchiert. Diese
+Seite ist ein Arbeitsstand, den ich mit euch diskutieren und an einem kleinen
+Feature erproben möchte."
+
+Die erste Folie illustriert Arbeitsschwerpunkte ohne gemessene Zeitanteile.
+Danach folgen Motivation, Recherche und Analyse, SQL als konkreter Tradeoff,
+Komposition, Vertical Slices, Wartbarkeit, Teamnutzen und gemeinsame Regeln.
+Vor dem Pilot im Explorer eine Diskussionspause einplanen; JSON-Export kann als
+Grundlage für eine gemeinsam geprüfte AGENTS.md dienen. Es gibt keinen
+automatischen AGENTS.md-Generator in der Oberfläche.
+
+Quellen zur Einordnung, nicht als Nachweis einer KI-bedingten Überlegenheit:
+
+- [Hibernate: Was ein ORM leistet](https://hibernate.org/orm/what-is-an-orm/)
+- [Jimmy Bogard: Vertical Slice Architecture](https://www.jimmybogard.com/vertical-slice-architecture/)
+- [Anthropic: Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents)
+
+Keine pauschale Aussage, dass OOP, ORM oder lesbarer Code durch KI überholt seien.
+Komposition passt zu OOP. Vertical Slices sind kein Gegenbegriff zu OOP.
+Tokenbedarf und Review-Aufwand an konkreten Aufgaben messen. Eine spätere
+ORM-Einführung erfordert erneute Prüfung der Persistenzverträge.
+
+Die neue Ansicht `/praesentation` ist über den zusätzlichen Navigationspunkt
+**Präsentation** erreichbar. Sie führt in sechs aufeinander aufbauenden Folien
+vom veränderten Workflow über die Leitfrage und Beispiele zur Teamentscheidung.
+Die zuschaltbaren Sprechnotizen enthalten Einordnung und Gesprächsimpulse.
+Diese Einführung behandelt bewusst die globale Perspektive; sie bewertet keine
+konkrete Firmenarchitektur und schlägt keinen pauschalen Rewrite vor.
+
+Für die anschließende Diskussion im Explorer **Global / allgemein** wählen.
+Die Gewichte sind subjektive Diskussionshilfen. Erwartete Vorteile sind
+Hypothesen, die der Pilot anhand vergleichbarer Aufgaben und dokumentierter
+Rahmenbedingungen überprüfen soll. KI-Tokens nur anhand tatsächlich gemeldeter
+Nutzung erfassen; Dateianzahl und Codeumfang sind dafür keine Messwerte.
+
 ## Kernaussage
 
 > Wir optimieren auf nachvollziehbare Änderungspfade. Ein Feature lässt sich vom
@@ -17,9 +86,9 @@ Storage dient anschließend als bewusstes Gegenbeispiel zu
 ## Einstieg: Architektur-Explorer — 3 Minuten
 
 1. „Präsentationsmodus“ aktivieren, damit die Tabelle mehr Platz erhält.
-2. Im Tab Spring Boot „JPA“ suchen und die Begründung über die Zeile oder `+` öffnen.
+2. Im Tab Daten & Persistenz „JPA“ suchen und die Begründung über die Zeile oder `+` öffnen.
 3. Suche leeren und die Karte „Nutzen“ anklicken: Schutzmechanismen bleiben wichtig.
-4. Zwischen Java, Programmiermustern und Closures wechseln. Bei SQL-Mapping das
+4. Zwischen Sprache & Typen, Architektur & Struktur, Programmierparadigmen und Code-Design wechseln. Unter Daten & Persistenz bei SQL-Mapping das
    konkrete Lambda-Beispiel öffnen.
 5. Anschließend den Backend-Link unten öffnen und Controller/Service zeigen.
 

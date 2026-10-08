@@ -1223,6 +1223,113 @@ footer a {
   gap: 24px;
   min-width: 0;
 }
+.project-list a.project-link { text-decoration: none; }
+.company-presentation { max-width: 1280px; margin: auto; padding: 24px 40px; }
+.company-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+.company-header .brand { letter-spacing: 0; }
+.company-agenda { display: flex; flex-wrap: wrap; gap: 6px; padding: 20px 0; }
+.company-agenda button { padding: 8px 10px; border-radius: 4px; background: #e8ece8; text-align: left; }
+.company-agenda button[aria-current] { background: var(--green); color: white; }
+.company-slide { margin: 0; padding: 28px 0; min-height: 480px; }
+.company-slide h1 { font-size: 36px; line-height: 1.2; margin: 12px 0; overflow-wrap: anywhere; letter-spacing: 0; }
+.company-lead { font-size: 22px; line-height: 1.5; max-width: 850px; }
+.idea-question { margin: 36px 0; padding: 24px 0 24px 24px; border-left: 5px solid #397895; font-size: 32px; line-height: 1.4; font-weight: 700; overflow-wrap: anywhere; }
+.architecture-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 30px; margin: 28px 0; }
+.architecture-comparison figure { margin: 0; min-width: 0; }
+.architecture-comparison figcaption { font-size: 17px; font-weight: 700; margin-bottom: 14px; }
+.architecture-comparison svg { display: block; width: 100%; height: auto; }
+.architecture-caption { grid-column: 1 / -1; margin: 0; font-size: 12px; color: #52665d; }
+.composition-example { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 16px 28px; padding: 18px 0; border-block: 1px solid var(--line); font-size: 14px; line-height: 1.7; }
+.composition-example code { display: block; overflow-wrap: anywhere; }
+.slice-code-details { grid-column: 1 / -1; min-width: 0; }
+.slice-code-details summary { cursor: pointer; font-size: 16px; font-weight: 700; padding: 14px 0; }
+.slice-code-details p { font-size: 13px; line-height: 1.6; }
+.slice-code-details > pre { background: #eef1f4; padding: 18px; overflow: auto; line-height: 1.7; }
+.slice-code-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 24px; }
+.architecture-package-trees { grid-column: 1 / -1; }
+@media (max-width: 800px) { .slice-code-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 600px) { .architecture-comparison { grid-template-columns: 1fr; gap: 24px; } }
+@media (max-width: 600px) { .idea-question { font-size: 25px; } }
+.company-slide ul { padding-left: 24px; max-width: 960px; }
+.company-slide li { font-size: 18px; line-height: 1.65; padding: 8px 0; }
+.company-notes { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 24px; line-height: 1.7; color: #52665d; }
+.slide-visual { margin: 28px 0; padding: 22px 0; border-block: 1px solid var(--line); }
+.slide-project-image { margin: 0 0 24px; }
+.slide-project-image img { display: block; width: 100%; height: auto; border: 1px solid var(--line); }
+.slide-project-image figcaption { margin-top: 10px; font-size: 13px; line-height: 1.6; color: #52665d; }
+.slide-flow { margin: 0 0 22px; }
+.slide-flow figcaption { font-weight: 700; margin-bottom: 14px; }
+.company-slide .slide-flow ol { display: flex; flex-wrap: wrap; gap: 24px; padding: 0; margin: 0; list-style: none; }
+.company-slide .slide-flow li { position: relative; flex: 1 1 135px; padding: 18px 14px; background: #e7eff3; border-top: 3px solid #397895; font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; }
+.company-slide .slide-flow li:nth-child(even) { background: #edf1e8; border-color: #718652; }
+.company-slide .slide-flow li:not(:last-child)::after { content: "→"; position: absolute; right: -20px; top: 50%; transform: translateY(-50%); color: #52665d; }
+.slide-code { margin: 20px 0 0; min-width: 0; }
+.slide-code figcaption { display: flex; flex-wrap: wrap; gap: 8px 16px; font-weight: 700; }
+.slide-code figcaption span { font-size: 12px; font-weight: 400; color: #52665d; }
+.slide-code pre { background: #eef1f4; border-left: 3px solid #397895; padding: 20px; overflow: auto; font-size: 14px; line-height: 1.7; }
+.visual-caption { max-width: 900px; font-size: 13px; line-height: 1.6; color: #52665d; }
+.workflow-chart { padding: 20px 0; }
+.workflow-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 64px; }
+.workflow-comparison .workflow-scenario { min-width: 0; margin: 24px 0; }
+.workflow-scenario figcaption { text-align: center; margin-bottom: 32px; }
+.workflow-three-bars { display: grid; grid-template-columns: repeat(3, minmax(0, 112px)); gap: 8px; justify-content: center; }
+.workflow-two-bars { display: grid; grid-template-columns: repeat(2, minmax(0, 112px)); gap: 8px; justify-content: center; }
+.workflow-two-bars .workflow-column-pair { background: none; }
+.workflow-schematic .workflow-column-pair { background: none; }
+@media (max-width: 600px) {
+  .workflow-comparison { gap: 24px; }
+  .workflow-three-bars { gap: 4px; }
+  .workflow-scenario figcaption { font-size: 15px; }
+}
+.workflow-columns { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; margin: 36px 0 18px; }
+.workflow-column-pair { height: 260px; display: flex; align-items: flex-end; justify-content: center; gap: 12px; border-bottom: 1px solid #a4b0aa; background: repeating-linear-gradient(to top, transparent 0, transparent 64px, #e4e9e2 64px, #e4e9e2 65px); }
+.workflow-column-track { height: 100%; width: 48px; display: flex; align-items: flex-end; }
+.workflow-column-fill { width: 100%; position: relative; min-height: 0; }
+.workflow-column-fill.scenario-0 { opacity: .45; }
+.workflow-column-fill strong { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); color: var(--ink); font-size: 15px; }
+.workflow-column-label { display: block; text-align: center; font-size: 14px; line-height: 1.5; margin-top: 14px; overflow-wrap: anywhere; }
+.workflow-scenario-key { display: flex; flex-wrap: wrap; gap: 20px; font-size: 13px; }
+.workflow-scenario-key .scenario-old { background: #20382e; opacity: .45; }
+.workflow-scenario-key .scenario-new { background: #20382e; }
+.workflow-cycle { padding: 18px 0; font-size: 17px; line-height: 1.8; border-bottom: 1px solid var(--line); }
+@media (max-width: 600px) {
+  .workflow-columns { gap: 10px; }
+  .workflow-column-pair { gap: 6px; }
+  .workflow-column-track { width: 24px; }
+  .workflow-column-label { font-size: 11px; }
+}
+.workflow-model { color: #52665d; font-size: 13px; }
+.workflow-chart figure { margin: 28px 0; }
+.workflow-chart figcaption { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+.workflow-bar { display: flex; width: 100%; height: 72px; overflow: hidden; border-radius: 4px; }
+.workflow-bar > div { display: flex; align-items: center; justify-content: center; min-width: 0; color: white; }
+.workflow-bar strong { font-size: 20px; }
+.workflow-values { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-top: 12px; font-size: 13px; }
+.workflow-chart i { display: inline-block; width: 10px; height: 10px; margin-right: 7px; }
+.workflow-legend { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; padding: 20px 0; border-block: 1px solid var(--line); }
+.workflow-legend p { font-size: 13px; line-height: 1.6; }
+@media (max-width: 600px) {
+  .workflow-legend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .workflow-bar strong { font-size: 14px; }
+}
+@media (max-width: 900px) {
+  .company-slide .slide-flow ol { flex-direction: column; gap: 22px; }
+  .company-slide .slide-flow li { flex: auto; }
+  .company-slide .slide-flow li:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -24px; transform: none; }
+  .slide-code pre { padding: 12px; font-size: 12px; }
+}
+.company-controls { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 18px; border-top: 1px solid var(--line); padding: 18px 0; }
+.company-controls button { width: 44px; height: 44px; border-radius: 4px; background: var(--green); color: white; font-size: 24px; }
+.company-controls button:disabled { opacity: .35; cursor: default; }
+.company-controls label { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+@media (max-width: 600px) {
+  .company-presentation { padding: 18px; }
+  .company-header .brand { font-size: 17px; }
+  .company-slide h1 { font-size: 28px; }
+  .company-lead { font-size: 19px; }
+  .company-slide li { font-size: 16px; }
+  .company-controls { flex-wrap: wrap; gap: 12px; }
+}
 .code-file-heading {
   display: flex;
   flex-direction: column;

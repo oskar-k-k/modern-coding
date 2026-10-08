@@ -11,6 +11,12 @@ oder Vererbung generell überholt wären.
 
 ## Start mit Docker
 
+Die Backend-Analyse bleibt im Bereich **Spring Boot & Java** und ist nach
+Sprache & Typen, Programmierparadigmen, Architektur & Struktur, Code-Design,
+Daten & Persistenz, Framework & Laufzeit sowie Qualität & Sicherheit gegliedert.
+Jeder allgemeine Bewertungspunkt erscheint genau einmal. Die Gewichte sind
+subjektive Einschätzungen; technische Referenzen stehen bei den jeweiligen Punkten.
+
 **Windows: `Start.cmd` doppelklicken.** Das Skript startet bei Bedarf Docker Desktop,
 baut beide Anwendungen, wartet auf deren Bereitschaft und öffnet den Browser.
 Voraussetzung ist eine installierte Docker-Desktop-Version mit Compose v2 und
@@ -30,6 +36,7 @@ docker compose ps
 Danach öffnen:
 
 - Präsentation: http://localhost:8085
+- Allgemeine Firmenpräsentation: http://localhost:8085/praesentation
 - Profilantwort: http://localhost:8085/api/profiles/alex/page
 - Profilbild aus Object Storage: http://localhost:8085/api/auth/avatar/1
 - API-Vertrag als JSON: http://localhost:8085/v3/api-docs

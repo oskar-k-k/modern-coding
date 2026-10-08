@@ -2,10 +2,29 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import { analyses, choices, dominant, type CodeSource, type CodeExamplePart, type Rating } from "./architecture-data";
+import { backendTopicForRow } from "./backend-topics";
 
 type SortKey = "name" | "omit" | "rethink" | "use" | "dominant" | "vote";
 type SortDirection = "asc" | "desc";
 type Vote = "up" | "down";
+
+const migratedVoteKey = (key: string) => {
+  const parts = key.split("/");
+  if (!["spring", "java", "patterns", "architecture", "paradigms", "closures"].includes(parts[2])) return key;
+  const topic = backendTopicForRow(parts.slice(3).join("/"));
+  if (!topic) return key;
+  parts[2] = topic;
+  return parts.join("/");
+};
+
+const migrateVotes = (stored: Record<string, Vote>) => {
+  const result = { ...stored };
+  for (const [key, vote] of Object.entries(stored)) {
+    const migrated = migratedVoteKey(key);
+    if (result[migrated] === undefined) result[migrated] = vote;
+  }
+  return result;
+};
 
 const scoreColor = (index: number, score: number) => {
   const colors = [
@@ -181,7 +200,7 @@ export default function ArchitectureExplorer() {
     const stored = window.localStorage.getItem("modern-coding-votes");
     if (!stored) return;
     try {
-      setVotes(JSON.parse(stored) as Record<string, Vote>);
+      setVotes(migrateVotes(JSON.parse(stored) as Record<string, Vote>));
     } catch {
       setVotes({});
     }
@@ -351,8 +370,8 @@ export default function ArchitectureExplorer() {
       for (const topicItem of frameworkItem.topics ?? []) {
         for (const row of topicItem.rows ?? []) {
           if (!row.id) continue;
-          if (row.meetingVote === "approved") importedVotes[row.id] = "up";
-          if (row.meetingVote === "rejected") importedVotes[row.id] = "down";
+          if (row.meetingVote === "approved") importedVotes[migratedVoteKey(row.id)] = "up";
+          if (row.meetingVote === "rejected") importedVotes[migratedVoteKey(row.id)] = "down";
         }
       }
     }
@@ -390,6 +409,9 @@ export default function ArchitectureExplorer() {
           PROJEKTE <span>{String(analyses.length).padStart(2, "0")}</span>
         </div>
         <div className="project-list" aria-label="Analysen">
+          <a className="project-link" href="/praesentation">
+            <span>ALL</span><strong>Präsentation</strong>
+          </a>
           {analyses.map((item) => (
             <button
               key={item.id}
